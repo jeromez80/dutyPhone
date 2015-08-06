@@ -57,8 +57,25 @@ def loadSupervisorKeywords(supnumber):
     print('Done loading keywords')
     return kw
 
+def saveSupervisorKeywords(supnumber, kw):
+    print(u'Loading keywords for: {0}'.format(supnumber))
+    with open(u'{0}.txt'.format(supnumber), 'w') as f:
+      for item in kw:
+        f.write("%s\n" % item)
+        print(item)
+    print('Done saving keywords for %s' % supnumber)
+    return True
+
+def generateWordList(kw):
+    wordlist = ""
+    for item in kw:
+      wordlist = wordlist + ',' + item
+    #Return text without first comma
+    return wordlist[1:]
+
 def changeDutyNumber(sms):
     global DUTYNUM, SILENTNUM, modem
+    oldDutyNum = DUTYNUM
     DUTYNUM = sms.number
     f = open('dutynumber.txt', 'w')
     f.write(DUTYNUM)
@@ -67,6 +84,7 @@ def changeDutyNumber(sms):
     modem.setForwarding(0, 3, DUTYNUM)
     response = modem.setForwarding(0, 1, DUTYNUM)
     print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
+    modem.sendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
 
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM
@@ -82,7 +100,7 @@ def handleSms(sms):
         else:
           sms.reply('Sorry I do not understand your message. Try "takeover duty" instead.')
       elif keyword == 'help':
-        sms.reply('takeover duty=Takeover as duty phone\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Stop alerts for kw')
+        sms.reply('takeover duty=Start duty\nstatus=Check status\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Stop alerts for kw\nmykw=List kw')
       elif keyword == 'silence' or keyword == 'silent':
         if sms.number == DUTYNUM:
           sms.reply('You are the duty phone and alerts cannot be silenced. :p')
@@ -100,14 +118,46 @@ def handleSms(sms):
       elif keyword == 'status':
         v1='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         v2='No' if sms.number in SILENTNUM else 'Yes'
-        v3='Not yet'
+        kw = loadSupervisorKeywords(sms.number)
+        v3=generateWordList(kw)
         sms.reply(u'Role: {0}\nAlerts: {1}\nOn-duty: {3}\nKeywords: {2}'.format(v1,v2,v3,DUTYNUM))      
+      elif keyword == 'sub':
+        stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
+        if stafflevel=='Engineer':
+          sms.reply('Sorry - feature not available to you')
+        else:
+          kw = loadSupervisorKeywords(sms.number)
+          newkw = sms.text.lower().split()[1]
+          kw.append(newkw)
+          saveSupervisorKeywords(sms.number, kw)
+          sms.reply(u'Added keyword: {0}\nSub:{1}'.format(newkw,generateWordList(kw)))
+      elif keyword == 'mykw':
+        stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
+        if stafflevel=='Engineer':
+          sms.reply('Sorry - feature not available to you')
+        else:
+          kw = loadSupervisorKeywords(sms.number)
+          sms.reply(u'Your keywords:\n{0}'.format(generateWordList(kw)))
+      elif keyword == 'unsub':
+        stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
+        if stafflevel=='Engineer':
+          sms.reply('Sorry - feature not available to you')
+        else:
+          kw = loadSupervisorKeywords(sms.number)
+          delkw = sms.text.lower().split()[1]
+          if delkw in kw:
+            kw.remove(delkw)
+            saveSupervisorKeywords(sms.number, kw)
+            sms.reply(u'Removed: {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
+          else:
+            sms.reply(u'You are not subscribed to {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
       else:
         sms.reply('Sorry I do not understand your message. Try "help" for assistance.')
     else: #NOT FROM STAFF, forward it!
       #NOTE: Need to add in timestamp and originating number. Need to cater for long SMS by breaking it into two.
       print(u'Sending SMS to duty number: {0} - {1}'.format(DUTYNUM, sms.text))
       sms.sendSms(DUTYNUM, sms.text)
+      #ONLY supervisors have keyword feature
       for supervisor in SUPERVISORNUM:
         if supervisor in SILENTNUM:
           print(u'Supervisor {0} is on silent mode.'.format(supervisor))
@@ -131,7 +181,7 @@ def handleSms(sms):
                 match = 1
             if match == 0:
               print(u'No match. Ignoring alert for {0}'.format(supervisor))
-    print('Processed incoming SMS...')
+    print('Completed processing of incoming SMS...')
     
 def main():
     global modem
