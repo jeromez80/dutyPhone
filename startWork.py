@@ -13,11 +13,13 @@ Obj1: Stores two types of destination number: duty number (gets all sms & calls)
 Obj2: When destination number is updated, use USSD code to update call divert status.
 
 Obj3: Support for keywords: "Takeover duty", "Sub <keyword>", "Unsub <keyword>", "Silence", "Alert", "Status", "Help"
+
+Obj4: Poll a job folder for message. Sends them out where: first line contains destination, second line contains message
 """
 
 from __future__ import print_function
 
-import logging, time
+import logging, time, os
 
 PORT = '/dev/ttyUSB2'
 BAUDRATE = 115200
@@ -26,6 +28,8 @@ DUTYNUM = ''
 SUPERVISORNUM = []
 STAFFNUM = []
 SILENTNUM = []
+POLLPATH = '/var/www/jobs/'
+DESTPATH = '/root/mcmodem/completed/'
 
 from gsmmodem.modem import GsmModem
 
@@ -65,6 +69,25 @@ def saveSupervisorKeywords(supnumber, kw):
         print(item)
     print('Done saving keywords for %s' % supnumber)
     return True
+
+def processJobFile(filename):
+	global POLLPATH, DESTPATH, modem
+	lineno=1
+	destno = ''
+	msg = ''
+	with open('%s%s' % (POLLPATH,filename)) as f:
+		for line in f:
+			if line:
+				print(line.rstrip())
+				if lineno==1:
+					destno = line.rstrip()
+					lineno += 1
+				else:
+					msg = '%s\n%s' % (msg,line)
+	print('Sending to %s -> %s' % (destno, msg.strip()))
+	modem.sendSms(destno, msg.strip())
+	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, filename)))
+	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, filename))
 
 def generateWordList(kw):
     wordlist = ""
@@ -201,8 +224,13 @@ def main():
     print(u'Current duty number is: {0}'.format(DUTYNUM))
     print('Waiting for SMS message...')    
     print(u'Signal strength is {0}% on {1} ({2}). IMEI {3}'.format(modem.signalStrength, modem.networkName, modem.imsi, modem.imei))
-    try:    
-        modem.rxThread.join(2**31) # Specify a (huge) timeout so that it essentially blocks indefinitely, but still receives CTRL+C interrupt signal
+    try:
+	while 1:
+		qMsgs = os.listdir(POLLPATH)
+		for qFile in qMsgs:
+			print('Found job file: %s' % qFile)
+			processJobFile(qFile)
+	        modem.rxThread.join(5) # Specify a (huge) timeout so that it essentially blocks indefinitely, but still receives CTRL+C interrupt signal
     finally:
         modem.close();
 
