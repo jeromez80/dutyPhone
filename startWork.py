@@ -17,7 +17,7 @@ Obj3: Support for keywords: "Takeover duty", "Sub <keyword>", "Unsub <keyword>",
 
 from __future__ import print_function
 
-import logging
+import logging, time
 
 PORT = '/dev/ttyUSB2'
 BAUDRATE = 115200
@@ -81,10 +81,14 @@ def changeDutyNumber(sms):
     f.write(DUTYNUM)
     f.close
     modem.sendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
+    time.sleep(1)
     modem.setForwarding(0, 3, DUTYNUM)
+    time.sleep(2)
     response = modem.setForwarding(0, 1, DUTYNUM)
+    time.sleep(2)
     print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
     modem.sendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
+    print(u'Old duty number sent relief message {0}'.format(oldDutyNum))
 
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM
@@ -156,7 +160,7 @@ def handleSms(sms):
     else: #NOT FROM STAFF, forward it!
       #NOTE: Need to add in timestamp and originating number. Need to cater for long SMS by breaking it into two.
       print(u'Sending SMS to duty number: {0} - {1}'.format(DUTYNUM, sms.text))
-      sms.sendSms(DUTYNUM, sms.text)
+      sms.sendSms(DUTYNUM, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
       #ONLY supervisors have keyword feature
       for supervisor in SUPERVISORNUM:
         if supervisor in SILENTNUM:
@@ -165,9 +169,9 @@ def handleSms(sms):
           print(u'Supervisor {0} is on duty and already sent the message.'.format(supervisor))
         else: #OK, passed all the checks. Now check the supervisor filter.
           kw = loadSupervisorKeywords(supervisor)
-          if '*ALL' in kw:
+          if '*all' in kw:
             print(u'Matched *ALL - Copying to supervisor {0}'.format(supervisor))
-            sms.sendSms(supervisor, sms.text)
+            sms.sendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
           else:
             print('Checking keyword match')
             match = 0
@@ -176,7 +180,7 @@ def handleSms(sms):
               line = line.lower()
               print(u'Match {0}?'.format(line))
               if line in smslower and match == 0:
-                sms.sendSms(supervisor, sms.text)
+                sms.sendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
                 print(u'Matched '.format(line))
                 match = 1
             if match == 0:
