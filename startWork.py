@@ -53,22 +53,38 @@ def loadDutyNumbers():
 def loadSupervisorKeywords(supnumber):
     kw = []
     print(u'Loading keywords for: {0}'.format(supnumber))
-    with open(u'{0}.txt'.format(supnumber)) as f:
-      for line in f:
-        if line:
-          kw.append(line.rstrip())
-          print(line)
+    try:
+      with open(u'{0}.txt'.format(supnumber)) as f:
+        for line in f:
+          if line:
+            kw.append(line.lower().strip())
+    except IOError:
+      print('Supervisor keyword file does not exist - no keywords.')
     print('Done loading keywords')
     return kw
 
 def saveSupervisorKeywords(supnumber, kw):
     print(u'Loading keywords for: {0}'.format(supnumber))
-    with open(u'{0}.txt'.format(supnumber), 'w') as f:
+    with open(u'{0}.txt'.format(supnumber), 'w+') as f:
       for item in kw:
-        f.write("%s\n" % item)
+        f.write("%s\n" % item.lower())
         print(item)
     print('Done saving keywords for %s' % supnumber)
     return True
+
+def saveLastIncomingNumber(number):
+	print('Saving incoming number for quick reply')
+	f=open('lastnumber.txt', 'w')
+	f.write(number)
+	f.close()
+	return True
+
+def getLastIncomingNumber():
+	print('Retrieving last incoming number for quick reply')
+	f=open('lastnumber.txt')
+	number = f.read()
+	f.close()
+	return number
 
 def processJobFile(filename):
 	global POLLPATH, DESTPATH, modem
@@ -121,13 +137,33 @@ def handleSms(sms):
     f.close
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
       keyword = sms.text.lower().split()[0]
+      #============ TAKEOVER DUTY ===============
       if keyword == 'takeover':
-        if sms.text.split()[1] == 'duty':
-          changeDutyNumber(sms)
-        else:
-          sms.reply('Sorry I do not understand your message. Try "takeover duty" instead.')
+        changeDutyNumber(sms)
+      #============ GET HELP  ===============
       elif keyword == 'help':
-        sms.reply('takeover duty=Start duty\nstatus=Check status\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Stop alerts for kw\nmykw=List kw')
+        sms.reply('takeover=Start duty\nreply <msg>=Reply msg to last sender\nmsg <num> <msg>=Send msg to num\nstatus=Check status\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Unsub kw\nmykw=List kw')
+      #============ REPLY LAST MSG ===============
+      elif keyword == 'reply':
+        dmsg = sms.text.split(' ', 1)[1]
+        print('Replying message to %s.' % (dnum))
+        sms.sendSms(getLastIncomingNumber(), dmsg)
+        time.sleep(3)
+        sms.reply('Your message to %s has been sent.' % (getLastIncomingNumber()))
+      #============ FORWARDING MSG ===============
+      elif keyword == 'msg':
+        dnum = sms.text.split()[1]
+        dmsg = sms.text.split(' ', 2)[2]
+        if (dnum[:3] != '+65'):
+          sms.reply('Your destination number must begin with +65. Message not sent, pls try again.')
+        elif (len(dnum) != 11):
+          sms.reply('Your destination number is not valid. Message not sent, pls try again.')
+        else:
+          print('Forwarding message to %s.' % (dnum))
+          sms.sendSms(dnum, dmsg)
+          time.sleep(3)
+          sms.reply('Your message to %s has been sent.' % (dnum))
+      #============ SILENCE n HOURS ===============
       elif keyword == 'silence' or keyword == 'silent':
         if sms.number == DUTYNUM:
           sms.reply('You are the duty phone and alerts cannot be silenced. :p')
@@ -136,18 +172,21 @@ def handleSms(sms):
         else:
           SILENTNUM.append(sms.number)
           sms.reply('You will NOT be notified of incoming alerts. Reply "alert" to re-enable alerts.')
+      #============ RE-ENABLE ALERTS ===============
       elif keyword == 'alert':
         if sms.number in SILENTNUM:
           SILENTNUM.remove(sms.number)
           sms.reply('You will be notified of incoming alerts.')
         else:
           sms.reply('You are already being notified of incoming alerts.')      
+      #============ CHECK STATUS ===============
       elif keyword == 'status':
         v1='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         v2='No' if sms.number in SILENTNUM else 'Yes'
         kw = loadSupervisorKeywords(sms.number)
         v3=generateWordList(kw)
         sms.reply(u'Role: {0}\nAlerts: {1}\nOn-duty: {3}\nKeywords: {2}'.format(v1,v2,v3,DUTYNUM))      
+      #============ SUBSCRIBE KW ===============
       elif keyword == 'sub':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
@@ -158,6 +197,7 @@ def handleSms(sms):
           kw.append(newkw)
           saveSupervisorKeywords(sms.number, kw)
           sms.reply(u'Added keyword: {0}\nSub:{1}'.format(newkw,generateWordList(kw)))
+      #============ GET LIST OF KW ===============
       elif keyword == 'mykw':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
@@ -165,6 +205,7 @@ def handleSms(sms):
         else:
           kw = loadSupervisorKeywords(sms.number)
           sms.reply(u'Your keywords:\n{0}'.format(generateWordList(kw)))
+      #============ UNSUB KW ===============
       elif keyword == 'unsub':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
@@ -178,6 +219,7 @@ def handleSms(sms):
             sms.reply(u'Removed: {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
           else:
             sms.reply(u'You are not subscribed to {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
+      #============ INVALID COMMAND ===============
       else:
         sms.reply('Sorry I do not understand your message. Try "help" for assistance.')
     else: #NOT FROM STAFF, forward it!
