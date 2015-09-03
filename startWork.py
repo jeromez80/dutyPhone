@@ -35,20 +35,26 @@ from gsmmodem.modem import GsmModem
 
 def loadDutyNumbers():
     global DUTYNUM, SUPERVISORNUM, STAFFNUM
-    f = open('dutynumber.txt', 'r+')
-    DUTYNUM = f.readline().rstrip()
-    f.close
-    with open('staffnumber.txt') as f:
-      for line in f:
-        if line:            # lines (ie skip them)
-          if line.split()[1] == 'S':
-            SUPERVISORNUM.append(line.split()[0])
-            print(u'Loaded supervisor number: {0}'.format(line.split()[0]))
-          elif line.split()[1] == 'D':
-            STAFFNUM.append(line.split()[0])
-            print(u'Loaded staff number: {0}'.format(line.split()[0]))
-          else:
-            print(u'Invalid entry in staff list: {0}'.format(line))
+    try:
+      f = open('dutynumber.txt', 'r')
+      DUTYNUM = f.readline().rstrip()
+      f.close
+    except IOError:
+    	print('Duty number is empty. Ignoring...')
+    try:
+      with open('staffnumber.txt') as f:
+        for line in f:
+          if line:            # lines (ie skip them)
+            if line.split()[1] == 'S':
+              SUPERVISORNUM.append(line.split()[0])
+              print(u'Loaded supervisor number: {0}'.format(line.split()[0]))
+            elif line.split()[1] == 'D':
+              STAFFNUM.append(line.split()[0])
+              print(u'Loaded staff number: {0}'.format(line.split()[0]))
+            else:
+              print(u'Invalid entry in staff list: {0}'.format(line))
+    except IOError:
+    	print('Staff number list is empty. Please create staffnumber.txt yourself')
 
 def loadSupervisorKeywords(supnumber):
     kw = []
