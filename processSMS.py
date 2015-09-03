@@ -30,6 +30,12 @@ STAFFNUM = []
 SILENTNUM = []
 POLLPATH = '/var/www/jobs/'
 DESTPATH = '/root/mcmodem/completed/'
+#SingTel Hi
+#SMSC_NUM = '+6596400001'
+#M1
+SMSC_NUM = '+6596845997'
+#Starhub
+#SMSC_NUM = '+6598540020'
 
 from gsmmodem.modem import GsmModem
 
@@ -267,6 +273,7 @@ def main():
     modem = GsmModem(PORT, BAUDRATE, smsReceivedCallbackFunc=handleSms)
     modem.smsTextMode = False 
     modem.connect(PIN)
+    modem.smsc = SMSC_NUM
     modem.checkForwarding(0)
     loadDutyNumbers()
     print(u'Current duty number is: {0}'.format(DUTYNUM))
