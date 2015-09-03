@@ -35,7 +35,7 @@ from gsmmodem.modem import GsmModem
 
 def loadDutyNumbers():
     global DUTYNUM, SUPERVISORNUM, STAFFNUM
-    f = open('dutynumber.txt', 'r')
+    f = open('dutynumber.txt', 'r+')
     DUTYNUM = f.readline().rstrip()
     f.close
     with open('staffnumber.txt') as f:
@@ -132,7 +132,7 @@ def changeDutyNumber(sms):
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
-    f = open('./messages.txt', 'a')
+    f = open('./messages.txt', 'a+')
     f.write(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(sms.number, sms.time, sms.text))
     f.close
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
