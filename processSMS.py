@@ -277,6 +277,23 @@ def main():
     modem.checkForwarding(0)
     loadDutyNumbers()
     print(u'Current duty number is: {0}'.format(DUTYNUM))
+    
+    #CHECK SMS LIST
+    messageList = modem.listStoredSms(STATUS_ALL, 'MT', True)
+    messageList.extend(modem.listStoredSms(STATUS_ALL, 'SM', True))
+    messageList.extend(modem.listStoredSms(STATUS_ALL, 'SR', True))
+    messageList.extend(modem.listStoredSms(STATUS_ALL, None, True))
+    for rSms in messageList:
+      print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
+      handleSms(rSms)
+      try:
+        f = open('./messages.txt', 'a')
+        f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms$
+        print(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.t$
+        f.close
+      except Exception as e:
+        print('Error saving message to disk. Probably encoding error or disk full')
+
     print('Waiting for SMS message...')    
     print(u'Signal strength is {0}% on {1} ({2}). IMEI {3}'.format(modem.signalStrength, modem.networkName, modem.imsi, modem.imei))
     try:
