@@ -99,7 +99,7 @@ def getLastIncomingNumber():
 	return number
 
 def processJobFile(filename):
-	global POLLPATH, DESTPATH, modem
+	global POLLPATH, DESTPATH, modem, DUTYNUM
 	lineno=1
 	destno = ''
 	msg = ''
@@ -108,7 +108,9 @@ def processJobFile(filename):
 			if line:
 				print(line.rstrip())
 				if lineno==1:
-					destno = line.rstrip()
+					destno = line.strip()
+					if destno == 'DUTYNUM':
+						destno = DUTYNUM
 					lineno += 1
 				else:
 					msg = '%s\n%s' % (msg,line)
