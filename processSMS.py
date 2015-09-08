@@ -36,6 +36,7 @@ DESTPATH = '/root/mcmodem/completed/'
 SMSC_NUM = '+6596845997'
 #Starhub
 #SMSC_NUM = '+6598540020'
+STATUS_ALL=4
 
 from gsmmodem.modem import GsmModem
 
@@ -290,8 +291,8 @@ def main():
       handleSms(rSms)
       try:
         f = open('./messages.txt', 'a')
-        f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms$
-        print(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.t$
+        f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
+        print(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
         f.close
       except Exception as e:
         print('Error saving message to disk. Probably encoding error or disk full')
