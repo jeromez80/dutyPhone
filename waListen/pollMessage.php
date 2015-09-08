@@ -52,7 +52,7 @@ if ($argv[1] != null) {
 
 if ((!file_exists($fileName)))
 {
-
+    echo "$fileName not found";
     echo "Welcome to CLI WA Client\n";
     echo "========================\n\n\n";
     echo "Your number > ";
@@ -177,8 +177,8 @@ $GLOBALS["current_contact"];
     }
 
 $poll_dir = '/var/www/jobswa/';
-$dutynum = '/root/mcmodem/dutynumber.txt';
 $complete_dir = '/root/mcmodem/completedwa/';
+$dutynum = '/root/mcmodem/dutynumber.txt';
 
 for ($loop=0; $loop<10; $loop++) {
 $dir = new DirectoryIterator(dirname($poll_dir.'*'));
@@ -186,15 +186,18 @@ foreach ($dir as $fileinfo) {
     if (!$fileinfo->isDot()) {
         $dmsg=file_get_contents($poll_dir.$fileinfo->getFilename());
 	$dnum = strtok($dmsg, "\n");
-	if ($dnum == 'DUTYNUM') {
-		$dnum = file_get_contents($dutynum);
-		echo 'Extracted duty number:'.$dnum;
-	} else {
+	if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+	else {
+		//doesn't begin with a +
+		if ($dnum=='DUTYNUM') { $dnum = file_get_contents($dutynum); }
+		//Let's send it to duty num anyway
+		$dnum = trim(file_get_contents($dutynum));
 		if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+		echo 'Replaced with Duty '.$dnum."\n";
 	}
 	$dmsg=substr(strstr($dmsg,"\n"), 1);
 	if (($dnum!='') && ($dmsg!='')) {
-		echo $dnum . '#'. $dmsg;
+		echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 		$w->sendMessage($dnum, $dmsg);
 	}
 	rename($poll_dir.$fileinfo->getFilename(), $complete_dir.$fileinfo->getFilename());
