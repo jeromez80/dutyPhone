@@ -121,6 +121,8 @@ $GLOBALS["wa"] = $w;
 $w->setMessageStore(new SqliteMessageStore($username));
 $events = new MyEvents($w);
 $w->eventManager()->bind('onGetMessage', 'onGetMessage');
+$w->eventManager()->bind('onGetGroupV2Info', 'onGetGroupV2Info');
+$w->eventManager()->bind('onGetGroups', 'onGetGroups');
 $w->eventManager()->bind('onGetSyncResult', 'onSyncResult');
 $w->eventManager()->bind('onGetRequestLastSeen', 'onGetRequestLastSeen');
 $w->eventManager()->bind('onPresenceAvailable', 'onPresenceAvailable');
@@ -152,6 +154,10 @@ if ($login == '1')
     $query = $db->prepare($sql);
     $query->execute(array('0'));
 }
+else {
+$w->sendGetGroups();
+}
+//$w->sendGetGroupV2Info();
 $w->sendGetPrivacyBlockedList();
 $w->sendAvailableForChat($nickname);
 $show = true;
@@ -170,27 +176,34 @@ $GLOBALS["current_contact"];
       #print($m->NodeString("") . "\n");
     }
 
-$poll_dir = '/var/www/jobs/';
+$poll_dir = '/var/www/jobswa/';
 $dutynum = '/root/mcmodem/dutynumber.txt';
+$complete_dir = '/root/mcmodem/completedwa/';
 
+for ($loop=0; $loop<10; $loop++) {
 $dir = new DirectoryIterator(dirname($poll_dir.'*'));
 foreach ($dir as $fileinfo) {
     if (!$fileinfo->isDot()) {
         $dmsg=file_get_contents($poll_dir.$fileinfo->getFilename());
-        $dnum = strtok($dmsg, "\n");
+	$dnum = strtok($dmsg, "\n");
 	if ($dnum == 'DUTYNUM') {
 		$dnum = file_get_contents($dutynum);
 		echo 'Extracted duty number:'.$dnum;
 	} else {
-	        if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+		if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 	}
-        $dmsg=substr(strstr($dmsg,"\n"), 1);
-        if (($dnum!='') && ($dmsg!='')) {
-                echo $dnum . '#'. $dmsg;
-                $w->sendMessage($dnum, $dmsg);
-        }
+	$dmsg=substr(strstr($dmsg,"\n"), 1);
+	if (($dnum!='') && ($dmsg!='')) {
+		echo $dnum . '#'. $dmsg;
+		$w->sendMessage($dnum, $dmsg);
+	}
+	rename($poll_dir.$fileinfo->getFilename(), $complete_dir.$fileinfo->getFilename());
     }
 }
+sleep(5);
+}//for loop
+
+//$w->sendMessage('6593822131-1441414092', 'Poll loop completed');
 
 $w->disconnect();
 echo "Disconnected. Bye! :D\n";
@@ -201,6 +214,27 @@ function onSyncResult($result)
         global $existUser;
         $existUser = true;
     }
+}
+
+function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject, $participants, $admins, $fromGetGroup ) {
+	echo "$mynumber\n";
+	echo "==> $group_id\n";
+	echo "$creator\n";
+	echo "$creation\n";
+	echo "$subject\n";
+	foreach ($participants as $participant) { echo "P: $participant\n"; }
+	foreach ($admins as $admin) { echo "A: $admin\n"; }
+	echo "$fromGetGroup\n";
+	echo "=================\n";
+}
+
+function onGetGroups( $mynumber, $groupList ) {
+
+	echo "$mynumber\n";
+	foreach ($groupList as $gid) {
+		echo "$gid\n";
+	}
+	echo "=========\n";
 }
 
 function onGetRequestLastSeen( $mynumber, $from, $id, $seconds )
@@ -232,7 +266,7 @@ function onGetMessage($mynumber, $from, $id, $type, $time, $name, $body)
     echo " < New message from $name ($number) >";
     echo $body;
     if ($body=='status') {
-        $GLOBALS["wa"]->sendMessage('6593822131' , "takeover=Takeover now.\nstatus=Check status\nhelp=Get help");
+    	$GLOBALS["wa"]->sendMessage('6593822131' , "takeover=Takeover now.\nstatus=Check status\nhelp=Get help");	
     }
 }
 
