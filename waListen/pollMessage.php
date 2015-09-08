@@ -171,12 +171,19 @@ $GLOBALS["current_contact"];
     }
 
 $poll_dir = '/var/www/jobs/';
+$dutynum = '/root/mcmodem/dutynumber.txt';
+
 $dir = new DirectoryIterator(dirname($poll_dir.'*'));
 foreach ($dir as $fileinfo) {
     if (!$fileinfo->isDot()) {
         $dmsg=file_get_contents($poll_dir.$fileinfo->getFilename());
         $dnum = strtok($dmsg, "\n");
-        if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+	if ($dnum == 'DUTYNUM') {
+		$dnum = file_get_contents($dutynum);
+		echo 'Extracted duty number:'.$dnum;
+	} else {
+	        if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+	}
         $dmsg=substr(strstr($dmsg,"\n"), 1);
         if (($dnum!='') && ($dmsg!='')) {
                 echo $dnum . '#'. $dmsg;
