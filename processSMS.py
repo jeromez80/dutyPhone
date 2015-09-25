@@ -116,7 +116,8 @@ def processJobFile(filename):
 				else:
 					msg = '%s\n%s' % (msg,line)
 	print('Sending to %s -> %s' % (destno, msg.strip()))
-	modem.sendSms(destno, msg.strip())
+	modem.waitForNetworkCoverage(10)
+	safeSendSms(destno, msg.strip())
 	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, filename)))
 	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, filename))
 
@@ -134,6 +135,7 @@ def changeDutyNumber(sms):
     f = open('dutynumber.txt', 'w')
     f.write(DUTYNUM)
     f.close
+    modem.waitForNetworkCoverage(10)
     modem.sendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
     time.sleep(1)
     modem.setForwarding(0, 3, DUTYNUM)
@@ -141,11 +143,26 @@ def changeDutyNumber(sms):
     response = modem.setForwarding(0, 1, DUTYNUM)
     time.sleep(2)
     print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
+    modem.waitForNetworkCoverage(10)
     modem.sendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
     print(u'Old duty number sent relief message {0}'.format(oldDutyNum))
 
+def safeSendSms(number, sms):
+	global modem
+	if len(sms) <= 160:
+		modem.sendSms(number, sms)
+		return True
+	text = sms
+	count = 1
+	while len(text) > 0:
+		print('Sending as long sms... part %i=%s' % (count,text[:150]))
+		modem.sendSms(number, text[:150])
+		time.sleep(3)
+		count = count + 1
+		text = text[150:]
+
 def handleSms(sms):
-    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM
+    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
     f = open('./messages.txt', 'a+')
     f.write(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(sms.number, sms.time, sms.text))
@@ -161,8 +178,9 @@ def handleSms(sms):
       #============ REPLY LAST MSG ===============
       elif keyword == 'reply':
         dmsg = sms.text.split(' ', 1)[1]
-        print('Replying message to %s.' % (dnum))
-        sms.sendSms(getLastIncomingNumber(), dmsg)
+        print('Replying message to %s.' % getLastIncomingNumber())
+        modem.waitForNetworkCoverage(10)
+        safeSendSms(getLastIncomingNumber(), dmsg)
         time.sleep(3)
         sms.reply('Your message to %s has been sent.' % (getLastIncomingNumber()))
       #============ FORWARDING MSG ===============
@@ -175,7 +193,7 @@ def handleSms(sms):
           sms.reply('Your destination number is not valid. Message not sent, pls try again.')
         else:
           print('Forwarding message to %s.' % (dnum))
-          sms.sendSms(dnum, dmsg)
+          safeSendSms(dnum, dmsg)
           time.sleep(3)
           sms.reply('Your message to %s has been sent.' % (dnum))
       #============ SILENCE n HOURS ===============
@@ -239,10 +257,19 @@ def handleSms(sms):
         sms.reply('Sorry I do not understand your message. Try "help" for assistance.')
     else: #NOT FROM STAFF, forward it!
       #NOTE: Need to add in timestamp and originating number. Need to cater for long SMS by breaking it into two.
+      saveLastIncomingNumber(sms.number)
       print(u'Sending SMS to duty number: {0} - {1}'.format(DUTYNUM, sms.text))
-      sms.sendSms(DUTYNUM, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
+      try:
+        modem.waitForNetworkCoverage(30)
+        safeSendSms(DUTYNUM, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
+      except:
+        time.sleep(5)
+        print('Exception when sending out message. Trying again...')
+        safeSendSms(DUTYNUM, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
+
       #ONLY supervisors have keyword feature
       for supervisor in SUPERVISORNUM:
+        time.sleep(3)
         if supervisor in SILENTNUM:
           print(u'Supervisor {0} is on silent mode.'.format(supervisor))
         elif supervisor == DUTYNUM:
@@ -251,7 +278,7 @@ def handleSms(sms):
           kw = loadSupervisorKeywords(supervisor)
           if '*all' in kw:
             print(u'Matched *ALL - Copying to supervisor {0}'.format(supervisor))
-            sms.sendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
+            safeSendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
           else:
             print('Checking keyword match')
             match = 0
@@ -260,7 +287,7 @@ def handleSms(sms):
               line = line.lower()
               print(u'Match {0}?'.format(line))
               if line in smslower and match == 0:
-                sms.sendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
+                safeSendSms(supervisor, u'[From: {0}]\n{1}'.format(sms.number,sms.text))
                 print(u'Matched '.format(line))
                 match = 1
             if match == 0:
@@ -287,8 +314,11 @@ def main():
     messageList.extend(modem.listStoredSms(STATUS_ALL, 'SR', True))
     messageList.extend(modem.listStoredSms(STATUS_ALL, None, True))
     for rSms in messageList:
-      print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
-      handleSms(rSms)
+      try:
+          print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
+          handleSms(rSms)
+      except:
+          print('Ooops, error in printing/handling message')
       try:
         f = open('./messages.txt', 'a')
         f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
