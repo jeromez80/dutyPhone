@@ -25,6 +25,7 @@ dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
 POLLPATH = dConfig.get('SMS-Q', 'IncomingPath')
 DESTPATH = dConfig.get('SMS-Q', 'CompletedPath')
+SMSLOGFILE = dConfig.get('SMS-Q', 'SMSLogs')
 PORT = dConfig.get('GSMmodem', 'Device')
 BAUDRATE = dConfig.getint('GSMmodem', 'Baud')
 PIN = None # SIM card PIN (if any)
@@ -44,12 +45,13 @@ from gsmmodem.modem import GsmModem
 
 def loadDutyNumbers():
     global DUTYNUM, SUPERVISORNUM, STAFFNUM
-    try:
-      f = open('dutynumber.txt', 'r')
-      DUTYNUM = f.readline().rstrip()
-      f.close
-    except IOError:
-    	print('Duty number is empty. Ignoring...')
+
+    dConfig= ConfigParser.RawConfigParser()
+    dConfig.read('config.ini')
+    DUTYNUM = dConfig.get('DutySystem', 'DutyNumber')
+    if DUTYNUM == '':
+        print('Duty number is empty. Ignoring...')
+
     try:
       with open('staffnumber.txt') as f:
         for line in f:
@@ -89,16 +91,18 @@ def saveSupervisorKeywords(supnumber, kw):
 
 def saveLastIncomingNumber(number):
 	print('Saving incoming number for quick reply')
-	f=open('lastnumber.txt', 'w')
-	f.write(number)
-	f.close()
+	dConfig= ConfigParser.RawConfigParser
+	dConfig.read('config.ini')
+	dConfig.set('DutySystem', 'LastNumber', number)
+	with open('config.ini', 'wb') as configfile:
+		dConfig.write(configfile)
 	return True
 
 def getLastIncomingNumber():
 	print('Retrieving last incoming number for quick reply')
-	f=open('lastnumber.txt')
-	number = f.read()
-	f.close()
+	dConfig= ConfigParser.RawConfigParser
+	dConfig.read('config.ini')
+	number = dConfig.get('DutySystem', 'LastNumber')
 	return number
 
 def processJobFile(filename):
@@ -134,9 +138,16 @@ def changeDutyNumber(sms):
     global DUTYNUM, SILENTNUM, modem
     oldDutyNum = DUTYNUM
     DUTYNUM = sms.number
-    f = open('dutynumber.txt', 'w')
-    f.write(DUTYNUM)
-    f.close
+
+    dConfig= ConfigParser.RawConfigParser()
+    dConfig.read('config.ini')
+    dConfig.set('DutySystem','DutyNumber',DUTYNUM)
+    with open('config.ini', 'wb') as configfile:
+        dConfig.write(configfile)
+
+    #f = open('dutynumber.txt', 'w')
+    #f.write(DUTYNUM)
+    #f.close
     modem.waitForNetworkCoverage(10)
     modem.sendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
     time.sleep(1)
@@ -164,9 +175,9 @@ def safeSendSms(number, sms):
 		text = text[150:]
 
 def handleSms(sms):
-    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, modem
+    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SMSLOGFILE, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
-    f = open('./messages.txt', 'a+')
+    f = open(SMSLOGFILE, 'a+')
     f.write(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(sms.number, sms.time, sms.text))
     f.close
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
@@ -326,7 +337,7 @@ def main():
       except:
           print('Ooops, error in printing/handling message')
       try:
-        f = open('./messages.txt', 'a')
+        f = open(SMSLOGFILE, 'a')
         f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
         print(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
         f.close
