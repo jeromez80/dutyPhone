@@ -19,17 +19,19 @@ Obj4: Poll a job folder for message. Sends them out where: first line contains d
 
 from __future__ import print_function
 
-import logging, time, os
+import logging, time, os, ConfigParser
 
-PORT = '/dev/ttyUSB2'
-BAUDRATE = 115200
+dConfig = ConfigParser.ConfigParser()
+dConfig.read("config.ini")
+POLLPATH = dConfig.get('SMS-Q', 'IncomingPath')
+DESTPATH = dConfig.get('SMS-Q', 'CompletedPath')
+PORT = dConfig.get('GSMmodem', 'Device')
+BAUDRATE = dConfig.getint('GSMmodem', 'Baud')
 PIN = None # SIM card PIN (if any)
 DUTYNUM = ''
 SUPERVISORNUM = []
 STAFFNUM = []
 SILENTNUM = []
-POLLPATH = '/var/www/jobs/'
-DESTPATH = '/root/mcmodem/completed/'
 #SingTel Hi
 #SMSC_NUM = '+6596400001'
 #M1
@@ -304,7 +306,11 @@ def main():
     modem.smsTextMode = False 
     modem.connect(PIN)
     modem.smsc = SMSC_NUM
-    modem.checkForwarding(0)
+    time.sleep(1)
+    try:
+        modem.checkForwarding(0)
+    except:
+        print('Error raised in checking forwarding details')
     loadDutyNumbers()
     print(u'Current duty number is: {0}'.format(DUTYNUM))
     
