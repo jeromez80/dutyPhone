@@ -19,7 +19,7 @@ Obj4: Poll a job folder for message. Sends them out where: first line contains d
 
 from __future__ import print_function
 
-import logging, time, os, ConfigParser
+import logging, time, os, ConfigParser, datetime
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
@@ -125,7 +125,8 @@ def processJobFile(filename):
 	modem.waitForNetworkCoverage(10)
 	safeSendSms(destno, msg.strip())
 	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, filename)))
-	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, filename))
+	newfilename = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
+	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, newfilename))
 
 def generateWordList(kw):
     wordlist = ""
