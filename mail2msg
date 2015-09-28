@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import smtpd, email
+import smtpd, email, ConfigParser
 import asyncore
 
 class CustomSMTPServer(smtpd.SMTPServer):
@@ -23,6 +23,9 @@ class CustomSMTPServer(smtpd.SMTPServer):
 	f.close()
         return
 
-server = CustomSMTPServer(('0.0.0.0', 8196), None)
+dConfig = ConfigParser.ConfigParser()
+dConfig.read("config.ini")
+print 'Binding to %s on port %s' % (dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port'))
+server = CustomSMTPServer((dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port')), None)
 
 asyncore.loop()
