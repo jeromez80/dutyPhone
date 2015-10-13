@@ -3,7 +3,7 @@
 <title>Send SMS Form</title>
 </head>
 <body>
-<form method="POST" action="sendSMS.php">
+<form method="POST" action="messageAPI.php">
 <input type="radio" name="desttype" value="dutynum" checked>Current DutyNumber - WhatsApp Only</input>
 <br>
 <input type="radio" name="desttype" value="destsms">Specific destination by SMS</input>
