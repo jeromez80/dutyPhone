@@ -121,6 +121,9 @@ def processJobFile(filename):
 					lineno += 1
 				else:
 					msg = '%s\n%s' % (msg,line)
+	if (destno=="") or (msg==""):
+		print('Empty or incomplete job file detected. Ignoring...')
+		return
 	print('Sending to %s -> %s' % (destno, msg.strip()))
 	modem.waitForNetworkCoverage(10)
 	safeSendSms(destno, msg.strip())
