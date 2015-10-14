@@ -1,7 +1,5 @@
 <?php
-$PATH1 = '/var/www/jobs/';
-$PATH2 = '/var/www/jobswa/';
-$DUTYNUM = '/root/mcmodem/dutynumber.txt';
+include "config.php";
 
 $destnumber = $_POST["destnumber"];
 $destMsg = $_POST["destMsg"];
