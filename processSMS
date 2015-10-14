@@ -28,17 +28,12 @@ DESTPATH = dConfig.get('SMS-Q', 'CompletedPath')
 SMSLOGFILE = dConfig.get('SMS-Q', 'SMSLogs')
 PORT = dConfig.get('GSMmodem', 'Device')
 BAUDRATE = dConfig.getint('GSMmodem', 'Baud')
+SMSC_NUM = dConfig.get('GSMmodem', 'SMSC_NUM')
 PIN = None # SIM card PIN (if any)
 DUTYNUM = ''
 SUPERVISORNUM = []
 STAFFNUM = []
 SILENTNUM = []
-#SingTel Hi
-#SMSC_NUM = '+6596400001'
-#M1
-SMSC_NUM = '+6596845997'
-#Starhub
-#SMSC_NUM = '+6598540020'
 STATUS_ALL=4
 
 from gsmmodem.modem import GsmModem
