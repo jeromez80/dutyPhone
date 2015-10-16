@@ -1,17 +1,64 @@
+<?php
+include("db_config.php");
+ 
+if(isset($_POST['submit']))
+{
+		$sms_number = $_POST['sms_message_centre'];
+		$last_number = $_POST['last_incoming_message_form'];
+		$current_number = $_POST['current_duty_number'];				
+		$update	= "UPDATE ".Suffix."mmg_phone_numbers SET `sms_message_center`='".$sms_number."', `current_duty_number`='".$current_number."', `last_incoming_message`='".$last_number."' where `id`='1'";
+		$query = mysql_query($update);
+}
+if(isset($_POST['action'])){
+	$id	=	$_POST['id'];
+	mysql_query("DELETE from superviser_number WHERE id='".$id."'");
+	die;
+}
+if(isset($_POST['submit2']))
+{
+		$superviser_number = $_POST['superviser_number'];
+		$number_type = $_POST['number_type'];
+		$insert = "Insert INTO superviser_number SET `number`='".$superviser_number."',number_type='".$number_type."' ";
+		$query_insert = mysql_query($insert);
+}
+if(isset($_POST['submit3']))
+{
+		$superviser_number = $_POST['staff_number'];
+		$number_type = $_POST['number_type'];
+		$insert = "Insert INTO superviser_number SET `number`='".$superviser_number."',number_type='".$number_type."' ";
+		$query_insert = mysql_query($insert);
+}
+ 
+$select = "select * from `mmg_phone_numbers`";
+$query = mysql_query($select);
+while($row=mysql_fetch_array($query))
+{
+	$data[] = $row;		
+}
+
+$select = "select * from `group_details`";
+$query = mysql_query($select);
+while($row=mysql_fetch_array($query))
+{
+	$group_deails[] = $row;		
+}
+
+?>
 <!doctype html>
 <html class="no-js" lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multi-Message Gateway :: Configuration</title>
+    <title>Smart-Message Gateway :: Configuration</title>
     <link rel="stylesheet" href="css/foundation.css" />
     <script src="js/vendor/modernizr.js"></script>
+	
   </head>
   <body>
     
     <div class="row">
       <div class="large-12 columns">
-        <h1>Multi-Message Gateway Setup</h1>
+        <h1>Smart-Message Gateway Setup</h1>
       </div>
     </div>
     
@@ -20,18 +67,37 @@
         <div class="panel">
           <h3>Thank you for choosing MMG! </h3>
           <p>To maximise this demo-unit, please configure the messaging options here.</p>
+		  <form name="mmg_numbers" method="post" action="#">
           <div class="row">
             <div class="large-4 medium-4 columns">
-              <label>Message Center</label>
-              <input type="text" placeholder="SMSC Number" value="+6594998888" />
+              <label>SMS Message Center</label>
+              <input type="text" name="sms_message_centre" placeholder="SMSC Number" value="<?php if(isset($data['0']['sms_message_center'])) { echo $data['0']['sms_message_center']; }?>"/>
             </div>
             <div class="large-4 medium-4 columns">
-              <label>Duty Number</label>
-              <input type="text" placeholder="+65" value="+65"/>
+              <label>Current Duty Number</label>
+              <input type="text" name="current_duty_number" placeholder="+65" value="<?php if(isset($data['0']['current_duty_number'])) { echo $data['0']['current_duty_number']; }?>"/>
             </div>
             <div class="large-4 medium-4 columns">
 	      <label>Last Incoming Message From</label>
-              <input type="text" placeholder="+65xxxxx" value="+65"/>
+              <input type="text" name="last_incoming_message_form" placeholder="+65xxxxx" value="<?php if(isset($data['0']['last_incoming_message'])) { echo $data['0']['last_incoming_message']; }?>"/>
+            </div>
+          </div>
+		 
+		  <div class="row">
+			<div class="panel" style="border:none;">
+				<input type="submit" class="small radius button" value="update" name="submit">
+			</div>
+			 </form>
+		  </div>
+          <div class="row">
+            <div class="large-12 medium-12 columns">
+              This device is pre-configured to: 
+              <ul>
+                <li style='color:green'><b>Send incoming alerts to both SMS duty number and selected WhatsApp Group Chat (Enabled)</b></li>
+                <li style='color:gray'>Send incoming alerts to SMS duty number only</li>
+                <li style='color:gray'>Send incoming alerts selected WhatsApp Group Chat. If it fails, send to duty number via SMS</li>
+              </ul>
+              Supported alerts: SMS, HTTP, SMTP via TCP/25
             </div>
           </div>
         </div>
@@ -66,8 +132,33 @@
 	}
 	?>
 	</ul>
-              <a href="#" class="small radius button">Add Supervisor Number</a><br/>
-              <a href="#" class="small radius button">Add Staff Number</a><br/>
+	<ul class=mtree>
+		<?PHP 
+			$res55	=	mysql_query("SELECT * FROM `superviser_number`  ") or die(mysql_error());
+			if(mysql_num_rows($res55) > 0){
+				while($dao	=	mysql_fetch_assoc($res55)){
+					if($dao['number_type']=='S'){
+						$number_type	=	'Supervisor';	
+					}else{
+						$number_type	=	'Staff';
+					}
+					echo  '<li id="li_'.$dao['id'].'">'.$dao['number'].'&nbsp;&nbsp;'.$number_type.'&nbsp;&nbsp;<a href="javascript:void(0)" rel="'.$dao['id'].'" class="small radius button delete_no" style="background-color:red;">Delete</a></li>';
+				}
+			}
+		?>
+	</ul>
+              <a href="javascript:void(0)" class="small radius button superviser_number">Add Supervisor Number</a><br/>
+			  <form name="f2" method="post" action="#">
+			   <input type="text" class="superviser" name="superviser_number" placeholder="Superviser Number" value="" style="display:none;">
+			   <input type="hidden" name="number_type" value="S">
+			   <input type="submit" class="small radius button superviser" value="submit" name="submit2" style="display:none;">
+			  </form> 
+              <a href="javascript:void(0)" class="staff_data small radius button">Add Staff Number</a><br/>
+			  <form name="f2" method="post" action="#">
+			   <input type="text" class="staff_data_input" name="staff_number" placeholder="Staff Number" value="" style="display:none;">
+			   <input type="hidden" name="number_type" value="D">
+			   <input type="submit" class="small radius button staff_data_input" value="submit" name="submit3" style="display:none;">
+			  </form> 
             </div>
           </div>
         </div>
@@ -82,7 +173,12 @@
           </div>
           <div class="row">
             <div class="large-12 medium-12 columns">
-            <p>Configure your GroupChat ID here.</p>
+            <p>List of Group Chats:</p>
+            <ul>
+			  <?php foreach($group_deails as $group_data){ ?>	
+              <li><?php echo $group_data['group_names']; ?> [<a href='#'><?php echo $group_data['group_code']; ?></a>]  <input class="state" type="checkbox" value ="<?php echo $group_data['status']; ?>" rel="<?php echo $group_data['id'] ?>"<?php if($group_data['status'] == "enable"){ echo 'checked'; } ?> /><label>Enable</label></li>
+              <?php }	?>	
+			</ul>
             </div>
           </div>
         </div>
@@ -108,6 +204,38 @@
     <script src="js/foundation.min.js"></script>
     <script>
       $(document).foundation();
-    </script>
+	  $( ".state" ).click(function() {
+		   var id = $(this).attr("rel");
+		   var group_status = $(this).val();
+		   
+				   $.ajax({
+				  method: "POST",
+				  url: "change_status.php",
+				  data: { group_id: id, status: group_status }
+				})
+			  .done(function( msg ) {
+				window.location = "http://mytestserver.co.in/setup";
+			  });
+		   
+		});
+		$('.delete_no').click(function(){
+			var id	=	$(this).attr('rel');
+			var data	=	'id='+id+'&action=delete';
+			$.ajax({
+				data: data,
+				type:'POST',
+				url:'index.php',
+				success:function(r){
+					$('#li_'+id).remove();
+				}
+			})
+		})
+		$(".superviser_number").click(function(){
+			$(".superviser").toggle();
+		});
+		$(".staff_data").click(function(){
+			$(".staff_data_input").toggle();
+		});
+	</script>
   </body>
 </html>
