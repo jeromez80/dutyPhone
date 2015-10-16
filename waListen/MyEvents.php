@@ -1,5 +1,5 @@
 <?php
-require 'AllEvents.php';
+require '../../Chat-API/src/events/AllEvents.php';
 
 class MyEvents extends AllEvents
 {
