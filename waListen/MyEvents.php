@@ -28,12 +28,12 @@ class MyEvents extends AllEvents
 //        'onGetExtendAccount',
 //        'onGetGroupMessage',
 //        'onGetGroupParticipants',
-//        'onGetGroups',
+        'onGetGroups',
 //        'onGetGroupsInfo',
 //        'onGetGroupsSubject',
 //        'onGetImage',
 //        'onGetLocation',
-//        'onGetMessage',
+        'onGetMessage',
 //        'onGetNormalizedJid',
 //        'onGetPrivacyBlockedList',
 //        'onGetProfilePicture',
@@ -86,4 +86,5 @@ class MyEvents extends AllEvents
     {
         echo "<p>Booo!, Phone number $mynumber is disconnected!</p>";
     }
+
 }

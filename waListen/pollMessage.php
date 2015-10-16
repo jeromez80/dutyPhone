@@ -124,6 +124,7 @@ $events = new MyEvents($w);
 $w->eventManager()->bind('onGetMessage', 'onGetMessage');
 $w->eventManager()->bind('onGetGroupV2Info', 'onGetGroupV2Info');
 $w->eventManager()->bind('onGetGroups', 'onGetGroups');
+$w->eventManager()->bind('onGroupisCreated', 'onGroupisCreated');
 $w->eventManager()->bind('onGetSyncResult', 'onSyncResult');
 $w->eventManager()->bind('onGetRequestLastSeen', 'onGetRequestLastSeen');
 $w->eventManager()->bind('onPresenceAvailable', 'onPresenceAvailable');
@@ -150,6 +151,7 @@ if ($login == '1')
     $w->sendGetServerProperties();
     $w->sendGetGroups();
     $w->sendGetBroadcastLists();
+    echo 'Send get groups';
 
     $sql = "UPDATE data SET login=?";
     $query = $db->prepare($sql);
@@ -157,6 +159,7 @@ if ($login == '1')
 }
 else {
 $w->sendGetGroups();
+echo 'Send get groups';
 }
 //$w->sendGetGroupV2Info();
 $w->sendGetPrivacyBlockedList();
@@ -165,8 +168,6 @@ $show = true;
 global $onlineContacts;
 $GLOBALS["online_contacts"] = array();
 $GLOBALS["current_contact"];
-
-    $poll_dir = '/var/www/jobs';
 
     $pn = new ProcessNode($w, $contact);
     $w->setNewMessageBind($pn);
@@ -177,10 +178,6 @@ $GLOBALS["current_contact"];
       #print($m->NodeString("") . "\n");
     }
 
-$poll_dir = '/var/www/jobswa/';
-$complete_dir = '/root/mcmodem/completedwa/';
-$dutynum = '/root/mcmodem/dutynumber.txt';
-
 for ($loop=0; $loop<10; $loop++) {
 $dir = new DirectoryIterator(dirname($poll_dir.'*'));
 foreach ($dir as $fileinfo) {
@@ -190,9 +187,9 @@ foreach ($dir as $fileinfo) {
 	if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 	else {
 		//doesn't begin with a +
-		if ($dnum=='DUTYNUM') { $dnum = file_get_contents($dutynum); }
+		if ($dnum=='DUTYNUM') { $dnum = '+0012345678'; }
 		//Let's send it to duty num anyway
-		$dnum = trim(file_get_contents($dutynum));
+		$dnum = '+0012345678';
 		if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 		echo 'Replaced with Duty '.$dnum."\n";
 	}
@@ -225,7 +222,7 @@ function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject,
 	echo "==> $group_id\n";
 	echo "$creator\n";
 	echo "$creation\n";
-	echo "$subject\n";
+	echo "ChatGroup Subject: $subject\n";
 	foreach ($participants as $participant) { echo "P: $participant\n"; }
 	foreach ($admins as $admin) { echo "A: $admin\n"; }
 	echo "$fromGetGroup\n";
