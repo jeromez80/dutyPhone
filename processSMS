@@ -86,7 +86,7 @@ def saveSupervisorKeywords(supnumber, kw):
 
 def saveLastIncomingNumber(number):
 	print('Saving incoming number for quick reply')
-	dConfig= ConfigParser.RawConfigParser
+	dConfig= ConfigParser.RawConfigParser()
 	dConfig.read('config.ini')
 	dConfig.set('DutySystem', 'LastNumber', number)
 	with open('config.ini', 'wb') as configfile:
@@ -95,7 +95,7 @@ def saveLastIncomingNumber(number):
 
 def getLastIncomingNumber():
 	print('Retrieving last incoming number for quick reply')
-	dConfig= ConfigParser.RawConfigParser
+	dConfig= ConfigParser.RawConfigParser()
 	dConfig.read('config.ini')
 	number = dConfig.get('DutySystem', 'LastNumber')
 	return number
