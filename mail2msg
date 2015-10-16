@@ -5,12 +5,11 @@ import asyncore
 class CustomSMTPServer(smtpd.SMTPServer):
     
     def process_message(self, peer, mailfrom, rcpttos, data):
-        global POLLPATH
+        global POLLPATHSMS, POLLPATHWA
         print 'Receiving message from:', peer
         print 'Message addressed from:', mailfrom
         print 'Message addressed to  :', rcpttos
         print 'Message length        :', len(data)
-	f=open(u'{0}msgSMTP.txt'.format(POLLPATH), 'w+')
 	dmsg = email.message_from_string(data)
 	if dmsg.is_multipart():
 		for payload in dmsg.get_payload():
@@ -19,21 +18,41 @@ class CustomSMTPServer(smtpd.SMTPServer):
 			print payload.get_payload()
 	else:
 		print dmsg.get_payload()
-		f.write(dmsg.get_payload())
-	f.close()
+		dpayload = dmsg.get_payload()
+
+	if POLLPATHSMS != '':
+		f=open(u'{0}msgSMTP.txt'.format(POLLPATHSMS), 'w+')
+		f.write(dpayload)
+		f.close()
+	if POLLPATHWA != '':
+		f=open(u'{0}msgSMTP.txt'.format(POLLPATHWA), 'w+')
+		f.write(dpayload)
+		f.close()
         return
 
-global POLLPATH
+global POLLPATHWA, POLLPATHSMS
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
-POLLPATH = dConfig.get('Folders', 'Drop')
-print 'Binding to %s on port %s' % (dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port'))
-print 'Destination folder is '+POLLPATH
-if not os.path.exists(POLLPATH):
-	print 'Destination folder does not exist.'
-	exit()
+if dConfig.get('Mail2Msg', 'sendSMS') == 'True':
+	POLLPATHSMS = dConfig.get('SMS-Q', 'incomingpath')
+	print '[Enabled] Send by SMS via '+POLLPATHSMS
+	if not os.path.exists(POLLPATHSMS):
+		print 'Destination folder for SMS does not exist.'
+		exit()
+else:
+	POLLPATHSMS = ''
 
+if dConfig.get('Mail2Msg', 'sendWA') == 'True':
+	POLLPATHWA = dConfig.get('Folders', 'Drop')
+	print '[Enabled] Send by WA via '+POLLPATHWA
+	if not os.path.exists(POLLPATHWA):
+		print 'Destination folder for WA does not exist.'
+		exit()
+else:
+	POLLPATHWA = ''
+
+print 'Binding to %s on port %s' % (dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port'))
 server = CustomSMTPServer((dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port')), None)
 
 asyncore.loop()

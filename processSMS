@@ -122,8 +122,8 @@ def processJobFile(filename):
 	print('Sending to %s -> %s' % (destno, msg.strip()))
 	modem.waitForNetworkCoverage(10)
 	safeSendSms(destno, msg.strip())
-	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, filename)))
 	newfilename = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
+	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, newfilename)))
 	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, newfilename))
 
 def generateWordList(kw):
