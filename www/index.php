@@ -1,5 +1,5 @@
 <?php
-include("db_config.php");
+include("config.php");
  
 if(isset($_POST['submit']))
 {
