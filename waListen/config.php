@@ -18,4 +18,4 @@ if(!$connect)
 die(mysql_error());
 }
 mysql_select_db(DB_DATABASENAME,$connect);
-
+echo 'DB Connected';
