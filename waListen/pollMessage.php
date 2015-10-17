@@ -117,6 +117,10 @@ $password = $result[0]['password'];
 $nickname = $result[0]['nickname'];
 $login    = $result[0]['login'];
 
+//PRUNE group info from database (GUI)
+$select = "TRUNCATE `group_details`";
+$query = mysql_query($select);
+
 $w = new WhatsProt($username, $nickname, $debug);
 $GLOBALS["wa"] = $w;
 $w->setMessageStore(new SqliteMessageStore($username));
@@ -218,6 +222,10 @@ function onSyncResult($result)
 }
 
 function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject, $participants, $admins, $fromGetGroup ) {
+	$select = "INSERT INTO `group_details` VALUES('', '$subject','$group_id','disabled')";
+	$query = mysql_query($select);
+	echo 'Inserted into db. '.$select;
+
 	echo "$mynumber\n";
 	echo "==> $group_id\n";
 	echo "$creator\n";
@@ -227,6 +235,8 @@ function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject,
 	foreach ($admins as $admin) { echo "A: $admin\n"; }
 	echo "$fromGetGroup\n";
 	echo "=================\n";
+
+
 }
 
 function onGetGroups( $mynumber, $groupList ) {
