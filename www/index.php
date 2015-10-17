@@ -197,7 +197,7 @@ while($row=mysql_fetch_array($query))
 				  data: { group_id: id, status: group_status }
 				})
 			  .done(function( msg ) {
-				window.location = "/";
+				window.location = "http://magicwa/#"+msg;
 			  });
 		   
 		});
