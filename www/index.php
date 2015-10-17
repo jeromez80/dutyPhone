@@ -159,7 +159,7 @@ while($row=mysql_fetch_array($query))
             <p>List of Group Chats:</p>
             <ul>
 			  <?php foreach($group_deails as $group_data){ ?>	
-              <li><?php echo $group_data['group_names']; ?> [<a href='#'><?php echo $group_data['group_code']; ?></a>]  <input class="state" type="checkbox" value ="<?php echo $group_data['status']; ?>" rel="<?php echo $group_data['id'] ?>"<?php if($group_data['status'] == "enable"){ echo 'checked'; } ?> /><label>Enable</label></li>
+              <li><?php echo $group_data['group_names']; ?></a> <input class="state" type="checkbox" value ="<?php echo $group_data['status']; ?>" rel="<?php echo $group_data['id'] ?>"<?php if($group_data['status'] == "enable"){ echo 'checked'; } ?> /><label>Enable</label></li>
               <?php }	?>	
 			</ul>
             </div>
@@ -197,7 +197,7 @@ while($row=mysql_fetch_array($query))
 				  data: { group_id: id, status: group_status }
 				})
 			  .done(function( msg ) {
-				window.location = "http://mytestserver.co.in/setup";
+				window.location = "/";
 			  });
 		   
 		});
