@@ -85,7 +85,7 @@ while($row=mysql_fetch_array($query))
 		 
 		  <div class="row">
 			<div class="panel" style="border:none;">
-				<input type="submit" class="small radius button" value="update" name="submit">
+				<input type="submit" class="small radius button" value="Update" name="submit">
 			</div>
 			 </form>
 		  </div>
@@ -116,33 +116,16 @@ while($row=mysql_fetch_array($query))
             <div class="large-12 medium-12 columns">
               <p>Registered numbers</p>
 	<ul class=mtree>
-	<?php
-	$numbers = file_get_contents('/usr/local/src/dutyPhone/staffnumber.txt');
-	foreach(preg_split("/((\r?\n)|(\r\n?))/", $numbers) as $line) {
-		if ($line != "") {
-			echo '<li>'.strtok($line, "\t ,");
-			$type = strtok("\t");
-			if ($type == 'S') {
-				echo '(Supervisor)';
-			} else {
-				echo '(Staff)';
-			}
-			echo '</li>';
-		}
-	}
-	?>
-	</ul>
-	<ul class=mtree>
-		<?PHP 
+		<?php
 			$res55	=	mysql_query("SELECT * FROM `superviser_number`  ") or die(mysql_error());
 			if(mysql_num_rows($res55) > 0){
-				while($dao	=	mysql_fetch_assoc($res55)){
+				while ($dao = mysql_fetch_assoc($res55)){
 					if($dao['number_type']=='S'){
 						$number_type	=	'Supervisor';	
 					}else{
 						$number_type	=	'Staff';
 					}
-					echo  '<li id="li_'.$dao['id'].'">'.$dao['number'].'&nbsp;&nbsp;'.$number_type.'&nbsp;&nbsp;<a href="javascript:void(0)" rel="'.$dao['id'].'" class="small radius button delete_no" style="background-color:red;">Delete</a></li>';
+					echo  '<li id="li_'.$dao['id'].'">'.$dao['number'].'&nbsp;&nbsp;'.$number_type.'&nbsp;&nbsp;<a href="javascript:void(0)" rel="'.$dao['id'].'" class="small radius button delete_no" style="background-color:red;">Delete</a></li>';	
 				}
 			}
 		?>
