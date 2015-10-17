@@ -194,12 +194,9 @@ while($row=mysql_fetch_array($query))
 				   $.ajax({
 				  method: "POST",
 				  url: "change_status.php",
-				  data: { group_id: id, status: group_status }
+				  data: { group_id: id, status: group_status },
+				  success:function(a){alert('GroupChat is no longer '+group_status+'d.');}
 				})
-			  .done(function( msg ) {
-				window.location = "http://magicwa/#"+msg;
-			  });
-		   
 		});
 		$('.delete_no').click(function(){
 			var id	=	$(this).attr('rel');
