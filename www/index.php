@@ -12,6 +12,7 @@ if(isset($_POST['submit']))
 		if ($newIP == '') {
 			unlink('setIP.txt');
 		} else {
+			echo "Saved new static IP: $newIP - Please reboot for settings to take effect.";
 			file_put_contents('setIP.txt', $newIP);
 		}
 }
@@ -77,7 +78,7 @@ $staticIP = file_get_contents('setIP.txt');
           <form name="mmg_numbers" method="post" action="#">
           <p>To access this appliance from your network, please configure the network options below. Remember to connect your network to the correct physical port on this appliance.</p>
           <div class="row">
-            <div class="large-4 medium-4 columns">
+            <div class="large-8 medium-8 columns">
               <label>Network IPv4 Address (Leave blank for DHCP)</label>
               <input type="text" name="staticIP" placeholder="Static IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
             </div>
