@@ -12,8 +12,8 @@ if(isset($_POST['submit']))
 		if ($newIP == '') {
 			unlink('setIP.txt');
 		} else {
-			echo "Saved new static IP: $newIP - Please reboot for settings to take effect.";
-			file_put_contents('./tmp/setIP.txt', $newIP);
+			//echo "Saved new static IP: $newIP - Please reboot for settings to take effect.";
+			file_put_contents('setIP.txt', $newIP);
 		}
 }
 if(isset($_POST['action'])){
@@ -50,7 +50,7 @@ while($row=mysql_fetch_array($query))
 	$group_deails[] = $row;		
 }
 
-$staticIP = file_get_contents('./tmp/setIP.txt');
+$staticIP = file_get_contents('setIP.txt');
 
 ?>
 <!doctype html>
@@ -80,7 +80,7 @@ $staticIP = file_get_contents('./tmp/setIP.txt');
           <div class="row">
             <div class="large-8 medium-8 columns">
               <label>Network IPv4 Address (Leave blank for DHCP)</label>
-              <input type="text" name="staticIP" placeholder="Static IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
+              <input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
             </div>
           </div>
           <p>Depending on your messaging provider, please configure the appropriate settings here.</p>
