@@ -35,6 +35,10 @@ if(isset($_POST['submit3']))
 		$insert = "Insert INTO superviser_number SET `number`='".$superviser_number."',number_type='".$number_type."' ";
 		$query_insert = mysql_query($insert);
 }
+if(isset($_POST['reboot']))
+{
+		file_put_contents('reboot.now', 'via GUI');
+}
  
 $select = "select * from `mmg_phone_numbers`";
 $query = mysql_query($select);
@@ -81,6 +85,12 @@ $staticIP = file_get_contents('setIP.txt');
             <div class="large-8 medium-8 columns">
               <label>Network IPv4 Address (Leave blank for DHCP)</label>
               <input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
+            </div>
+            <div class="large-4 medium-4 columns">
+		<?php
+			if (file_exists('reboot.now')) { echo '<label>Rebooting... Please wait a minute.</label>'; }
+		?>
+              <input type="submit" class="small radius button" name="reboot" value="Reboot Smart-Message"/>
             </div>
           </div>
           <p>Depending on your messaging provider, please configure the appropriate settings here.</p>
