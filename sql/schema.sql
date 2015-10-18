@@ -107,3 +107,35 @@ ALTER TABLE `mmg_phone_numbers`
 --
 ALTER TABLE `superviser_number`
   MODIFY `id` int(100) NOT NULL AUTO_INCREMENT;
+
+--
+-- Table structure for table `messages`
+--
+
+CREATE TABLE IF NOT EXISTS `messages` (
+  `id` int(11) NOT NULL,
+  `timestamp` datetime NOT NULL,
+  `sender` varchar(25) NOT NULL,
+  `receiver` varchar(25) NOT NULL,
+  `message` varchar(1024) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `messages`
+--
+ALTER TABLE `messages`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `messages`
+--
+ALTER TABLE `messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
