@@ -8,6 +8,12 @@ if(isset($_POST['submit']))
 		$current_number = $_POST['current_duty_number'];				
 		$update	= "UPDATE ".Suffix."mmg_phone_numbers SET `sms_message_center`='".$sms_number."', `current_duty_number`='".$current_number."', `last_incoming_message`='".$last_number."' where `id`='1'";
 		$query = mysql_query($update);
+		$newIP = $_POST['staticIP'];
+		if ($newIP == '') {
+			unlink('setIP.txt');
+		} else {
+			file_put_contents('setIP.txt', $newIP);
+		}
 }
 if(isset($_POST['action'])){
 	$id	=	$_POST['id'];
@@ -43,6 +49,8 @@ while($row=mysql_fetch_array($query))
 	$group_deails[] = $row;		
 }
 
+$staticIP = file_get_contents('setIP.txt');
+
 ?>
 <!doctype html>
 <html class="no-js" lang="en">
@@ -66,8 +74,15 @@ while($row=mysql_fetch_array($query))
       <div class="large-12 columns">
         <div class="panel">
           <h3>Thank you for choosing Smart-Message! </h3>
-          <p>To maximise this demo-unit, please configure the messaging options here.</p>
-		  <form name="mmg_numbers" method="post" action="#">
+          <form name="mmg_numbers" method="post" action="#">
+          <p>To access this appliance from your network, please configure the network options below. Remember to connect your network to the correct physical port on this appliance.</p>
+          <div class="row">
+            <div class="large-4 medium-4 columns">
+              <label>Network IPv4 Address (Leave blank for DHCP)</label>
+              <input type="text" name="staticIP" placeholder="Static IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
+            </div>
+          </div>
+          <p>Depending on your messaging provider, please configure the appropriate settings here.</p>
           <div class="row">
             <div class="large-4 medium-4 columns">
               <label>SMS Message Center</label>
