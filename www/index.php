@@ -247,6 +247,7 @@ while($row=mysql_fetch_array($query))
 }
 
 ?>
+        <form action="#" method="POST"><input class="small radius button" type="submit" name="nothing" value="Refresh"></form>
         </div>
       </div>
     </div>

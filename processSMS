@@ -128,7 +128,7 @@ def getLastIncomingNumber():
 	return number
 
 def processJobFile(filename):
-	global POLLPATH, DESTPATH, modem, DUTYNUM
+	global POLLPATH, DESTPATH, modem, DUTYNUM, SQLCur, db
 	lineno=1
 	destno = ''
 	msg = ''
@@ -146,6 +146,9 @@ def processJobFile(filename):
 	if (destno=="") or (msg==""):
 		print('Empty or incomplete job file detected. Ignoring...')
 		return
+
+	SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'API-Job', '"+destno+"', '"+msg.strip()+"')")
+	db.commit()
 	print('Sending to %s -> %s' % (destno, msg.strip()))
 	modem.waitForNetworkCoverage(10)
 	safeSendSms(destno, msg.strip())
@@ -175,7 +178,7 @@ def changeDutyNumber(sms):
     #f.write(DUTYNUM)
     #f.close
     modem.waitForNetworkCoverage(10)
-    modem.sendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
+    safeSendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
     time.sleep(1)
     modem.setForwarding(0, 3, DUTYNUM)
     time.sleep(2)
@@ -183,11 +186,15 @@ def changeDutyNumber(sms):
     time.sleep(2)
     print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
     modem.waitForNetworkCoverage(10)
-    modem.sendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
+    safeSendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
     print(u'Old duty number sent relief message {0}'.format(oldDutyNum))
 
 def safeSendSms(number, sms):
-	global modem
+	global modem, SQLCur, db
+        query = "INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), 'MODEM', '"+number+"', '"+sms+"')"
+        SQLCur.execute(query)
+	db.commit()
+
 	if len(sms) <= 160:
 		modem.sendSms(number, sms)
 		return True
@@ -201,11 +208,11 @@ def safeSendSms(number, sms):
 		text = text[150:]
 
 def handleSms(sms):
-    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SMSLOGFILE, modem
+    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SQLCur, db, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
-    f = open(SMSLOGFILE, 'a+')
-    f.write(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(sms.number, sms.time, sms.text))
-    f.close
+    query = "INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), '"+sms.number+"', 'MODEM', '"+sms.text+"')"
+    SQLCur.execute(query)
+    db.commit()
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
       keyword = sms.text.lower().split()[0]
       #============ TAKEOVER DUTY ===============
@@ -213,7 +220,7 @@ def handleSms(sms):
         changeDutyNumber(sms)
       #============ GET HELP  ===============
       elif keyword == 'help':
-        sms.reply('takeover=Start duty\nreply <msg>=Reply msg to last sender\nmsg <num> <msg>=Send msg to num\nstatus=Check status\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Unsub kw\nmykw=List kw')
+        safeSendSms(sms.number, 'takeover=Start duty\nreply <msg>=Reply msg to last sender\nmsg <num> <msg>=Send msg to num\nstatus=Check status\nsilence <n>=No alert for n hours\nsub <kw>=Get alerts matching kw\nunsub <kw>=Unsub kw\nmykw=List kw')
       #============ REPLY LAST MSG ===============
       elif keyword == 'reply':
         dmsg = sms.text.split(' ', 1)[1]
@@ -221,79 +228,79 @@ def handleSms(sms):
         modem.waitForNetworkCoverage(10)
         safeSendSms(getLastIncomingNumber(), dmsg)
         time.sleep(3)
-        sms.reply('Your message to %s has been sent.' % (getLastIncomingNumber()))
+        safeSendSms(sms.number, 'Your message to %s has been sent.' % (getLastIncomingNumber()))
       #============ FORWARDING MSG ===============
       elif keyword == 'msg':
         dnum = sms.text.split()[1]
         dmsg = sms.text.split(' ', 2)[2]
         if (dnum[:3] != '+65'):
-          sms.reply('Your destination number must begin with +65. Message not sent, pls try again.')
+          safeSendSms(sms.number, 'Your destination number must begin with +65. Message not sent, pls try again.')
         elif (len(dnum) != 11):
-          sms.reply('Your destination number is not valid. Message not sent, pls try again.')
+          safeSendSms(sms.number, 'Your destination number is not valid. Message not sent, pls try again.')
         else:
           print('Forwarding message to %s.' % (dnum))
           safeSendSms(dnum, dmsg)
           time.sleep(3)
-          sms.reply('Your message to %s has been sent.' % (dnum))
+          safeSendSms(sms.number, 'Your message to %s has been sent.' % (dnum))
       #============ SILENCE n HOURS ===============
       elif keyword == 'silence' or keyword == 'silent':
         if sms.number == DUTYNUM:
-          sms.reply('You are the duty phone and alerts cannot be silenced. :p')
+          safeSendSms(sms.number, 'You are the duty phone and alerts cannot be silenced. :p')
         elif sms.number in SILENTNUM:
-          sms.reply('You have already disabled any incoming alerts.')      
+          safeSendSms(sms.number, 'You have already disabled any incoming alerts.')      
         else:
           SILENTNUM.append(sms.number)
-          sms.reply('You will NOT be notified of incoming alerts. Reply "alert" to re-enable alerts.')
+          safeSendSms(sms.number, 'You will NOT be notified of incoming alerts. Reply "alert" to re-enable alerts.')
       #============ RE-ENABLE ALERTS ===============
       elif keyword == 'alert':
         if sms.number in SILENTNUM:
           SILENTNUM.remove(sms.number)
-          sms.reply('You will be notified of incoming alerts.')
+          safeSendSms(sms.number, 'You will be notified of incoming alerts.')
         else:
-          sms.reply('You are already being notified of incoming alerts.')      
+          safeSendSms(sms.number, 'You are already being notified of incoming alerts.')      
       #============ CHECK STATUS ===============
       elif keyword == 'status':
         v1='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         v2='No' if sms.number in SILENTNUM else 'Yes'
         kw = loadSupervisorKeywords(sms.number)
         v3=generateWordList(kw)
-        sms.reply(u'Role: {0}\nAlerts: {1}\nOn-duty: {3}\nKeywords: {2}'.format(v1,v2,v3,DUTYNUM))      
+        safeSendSms(sms.number, u'Role: {0}\nAlerts: {1}\nOn-duty: {3}\nKeywords: {2}'.format(v1,v2,v3,DUTYNUM))      
       #============ SUBSCRIBE KW ===============
       elif keyword == 'sub':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
-          sms.reply('Sorry - feature not available to you')
+          safeSendSms(sms.number, 'Sorry - feature not available to you')
         else:
           kw = loadSupervisorKeywords(sms.number)
           newkw = sms.text.lower().split()[1]
           kw.append(newkw)
           saveSupervisorKeywords(sms.number, kw)
-          sms.reply(u'Added keyword: {0}\nSub:{1}'.format(newkw,generateWordList(kw)))
+          safeSendSms(sms.number, u'Added keyword: {0}\nSub:{1}'.format(newkw,generateWordList(kw)))
       #============ GET LIST OF KW ===============
       elif keyword == 'mykw':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
-          sms.reply('Sorry - feature not available to you')
+          safeSendSms(sms.number, 'Sorry - feature not available to you')
         else:
           kw = loadSupervisorKeywords(sms.number)
-          sms.reply(u'Your keywords:\n{0}'.format(generateWordList(kw)))
+          safeSendSms(sms.number, u'Your keywords:\n{0}'.format(generateWordList(kw)))
       #============ UNSUB KW ===============
       elif keyword == 'unsub':
         stafflevel='Supervisor' if sms.number in SUPERVISORNUM else 'Engineer'
         if stafflevel=='Engineer':
-          sms.reply('Sorry - feature not available to you')
+          safeSendSms(sms.number, 'Sorry - feature not available to you')
         else:
           kw = loadSupervisorKeywords(sms.number)
           delkw = sms.text.lower().split()[1]
           if delkw in kw:
             kw.remove(delkw)
             saveSupervisorKeywords(sms.number, kw)
-            sms.reply(u'Removed: {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
+            safeSendSms(sms.number, u'Removed: {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
           else:
-            sms.reply(u'You are not subscribed to {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
+            safeSendSms(sms.number, u'You are not subscribed to {0}\nSub:{1}'.format(delkw,generateWordList(kw)))
       #============ INVALID COMMAND ===============
       else:
-        sms.reply('Sorry I do not understand your message. Try "help" for assistance.')
+        safeSendSms(sms.number, 'Sorry I do not understand your message. Try "help" for assistance.')
     else: #NOT FROM STAFF, forward it!
       #NOTE: Need to add in timestamp and originating number. Need to cater for long SMS by breaking it into two.
       saveLastIncomingNumber(sms.number)
@@ -359,16 +366,10 @@ def main():
     for rSms in messageList:
       try:
           print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
+          SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), '"+rsms.number+"', 'MODEM (Offline)', '"+rsms.text+"')")
           handleSms(rSms)
       except:
           print('Ooops, error in printing/handling message')
-      try:
-        f = open(SMSLOGFILE, 'a')
-        f.write(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
-        print(u'== SMS message received (offline) ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n============\n\n'.format(rSms.number, rSms.time, rSms.text))
-        f.close
-      except Exception as e:
-        print('Error saving message to disk. Probably encoding error or disk full')
 
     print('Waiting for SMS message...')    
     print(u'Signal strength is {0}% on {1} ({2}). IMEI {3}'.format(modem.signalStrength, modem.networkName, modem.imsi, modem.imei))
