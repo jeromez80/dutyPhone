@@ -65,7 +65,7 @@ while($row=mysql_fetch_array($query))
     <div class="row">
       <div class="large-12 columns">
         <div class="panel">
-          <h3>Thank you for choosing MMG! </h3>
+          <h3>Thank you for choosing Smart-Message! </h3>
           <p>To maximise this demo-unit, please configure the messaging options here.</p>
 		  <form name="mmg_numbers" method="post" action="#">
           <div class="row">
