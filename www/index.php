@@ -13,7 +13,7 @@ if(isset($_POST['submit']))
 			unlink('setIP.txt');
 		} else {
 			echo "Saved new static IP: $newIP - Please reboot for settings to take effect.";
-			file_put_contents('setIP.txt', $newIP);
+			file_put_contents('./tmp/setIP.txt', $newIP);
 		}
 }
 if(isset($_POST['action'])){
@@ -50,7 +50,7 @@ while($row=mysql_fetch_array($query))
 	$group_deails[] = $row;		
 }
 
-$staticIP = file_get_contents('setIP.txt');
+$staticIP = file_get_contents('./tmp/setIP.txt');
 
 ?>
 <!doctype html>
