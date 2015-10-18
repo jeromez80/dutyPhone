@@ -39,6 +39,26 @@ if(isset($_POST['reboot']))
 {
 		file_put_contents('reboot.now', 'via GUI');
 }
+if(isset($_POST['newWAlic']))
+{
+	$decoded = base64_decode($_POST['newlicense'], true);
+	if ($decoded === false) { $licmsg = 'Invalid license.'; }
+	$lines = explode(PHP_EOL, $decoded);
+	if ($lines[0] != 'GeekWAlic00011') {
+		$licmsg = '<font color="red">This is not a valid license file.</font>';
+	} else {
+		//VALID
+		$newnum = $lines[1];
+		$newpw = $lines[2];
+		if (substr($newnum,0,2) != '65') {
+			$licmsg = '<font color="red">The number contained in the license file is invalid.</font>';
+		} else {
+			mysql_query("TRUNCATE data;");
+			mysql_query("INSERT INTO data VALUES ('$newnum', '$newpw', 'SmartMessage', '1')");
+			$licmsg = '<font color="green">The new number '.$newnum.' has been registered.</font>';
+		}
+	}
+}
  
 $select = "select * from `mmg_phone_numbers`";
 $query = mysql_query($select);
@@ -178,6 +198,16 @@ $staticIP = file_get_contents('setIP.txt');
           <div class="row">
             <div class="large-12 medium-12 columns">
               <h4>WhatsApp Options</h4>
+            </div>
+          </div>
+          <div class="row">
+            <div class="large-12 medium-12 columns">
+		<p>Load a new WhatsApp license:</p>
+		<?php if (isset($licmsg)) { echo "<p>$licmsg</p>"; } ?>
+		<form method="POST" action="#">
+		<textarea name="newlicense" class="small radius panel"></textarea>
+		<input type="submit" class="small radius button" name="newWAlic">
+		</form>
             </div>
           </div>
           <div class="row">
