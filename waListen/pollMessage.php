@@ -30,85 +30,9 @@ echo "#                                  #\n";
 echo "####################################\n\n";
 echo "====================================\n";
 
-$fileName = __DIR__ . DIRECTORY_SEPARATOR . 'data.db';
 $contactsDB = __DIR__ . DIRECTORY_SEPARATOR . 'contacts.db';
-if ($argv[1] != null) {
-  if (!file_exists($fileName))
-  {
-    $db = new \PDO("sqlite:" . $fileName, null, null, array(PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
-    $db->exec('CREATE TABLE data (`username` TEXT, `password` TEXT, `nickname` TEXT, `login` TEXT)');
-    $sql = 'INSERT INTO data (`username`, `password`, `nickname`, `login`) VALUES (:username, :password, :nickname, :login)';
-    $query = $db->prepare($sql);
 
-    $query->execute(
-        array(
-            ':username' => $argv[1],
-            ':password' => $argv[2],
-            ':nickname' => $argv[3],
-            ':login'    => '1'
-        )
-    );
-  }
-}
-
-if ((!file_exists($fileName)))
-{
-    echo "$fileName not found";
-    echo "Welcome to CLI WA Client\n";
-    echo "========================\n\n\n";
-    echo "Your number > ";
-    $number = trim(fgets(STDIN));
-    $w = new WhatsProt($number, $nickname, $debug);
-
-    try
-    {
-        $result = $w->codeRequest('sms');
-    } catch (Exception $e)
-    {
-       echo "there is an error" . $e;
-    }
-    echo "\nEnter sms code you have received > ";
-    $code = trim(str_replace("-", "", fgets(STDIN)));
-    try
-    {
-        $result = $w->codeRegister($code);
-    } catch (Exception $e)
-    {
-       echo "there is an error";
-    }
-
-    echo "\nYour nickname > ";
-    $nickname = trim(fgets(STDIN));
-    do
-    {
-       echo "Is '$nickname' right?\n";
-       echo "yes/no > ";
-       $right = trim(fgets(STDIN));
-       if ($right != 'yes')
-       {
-         echo "\nYour nickname > ";
-         $nickname = trim(fgets(STDIN));
-       }
-
-    } while ($right != 'yes');
-
-    $db = new \PDO("sqlite:" . $fileName, null, null, array(PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
-    $db->exec('CREATE TABLE data (`username` TEXT, `password` TEXT, `nickname` TEXT, `login` TEXT)');
-
-    $sql = 'INSERT INTO data (`username`, `password`, `nickname`, `login`) VALUES (:username, :password, :nickname, :login)';
-    $query = $db->prepare($sql);
-
-    $query->execute(
-        array(
-            ':username' => $number,
-            ':password' => $result->pw,
-            ':nickname' => $nickname,
-            ':login'    => '1'
-        )
-    );
-}
-
-$db = new \PDO("sqlite:" . $fileName, null, null, array(PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+$db = new \PDO("mysql:host=localhost;dbname=smartMessage", 'root', null, array(PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
 $sql = 'SELECT username, password, nickname, login FROM data';
 $row = $db->query($sql);
 $result = $row->fetchAll();
@@ -118,8 +42,23 @@ $nickname = $result[0]['nickname'];
 $login    = $result[0]['login'];
 
 //PRUNE group info from database (GUI)
-$select = "TRUNCATE `group_details`";
 $query = mysql_query($select);
+
+function getDutyNumber() {
+	//Get duty number from MySQL
+	$select = "SELECT * FROM `mmg_phone_numbers` WHERE id=1";
+	$row = mysql_fetch_array(mysql_query($select));
+	$dutynumber = $row['current_duty_number'];
+	return $dutynumber;
+}
+
+function getGroupChats() {
+	//Get duty number from MySQL
+	$select = "SELECT group_code FROM `group_details` WHERE status='enable'";
+	return mysql_query($select);
+}
+
+echo "Current duty number is" .getDutyNumber()."\n\n";
 
 $w = new WhatsProt($username, $nickname, $debug);
 $GLOBALS["wa"] = $w;
@@ -141,7 +80,6 @@ $w->connect();
 try
 {
   $w->loginWithPassword($password);
-  echo $password;
 }
 catch (Exception $e)
 {
@@ -155,7 +93,6 @@ if ($login == '1')
     $w->sendGetServerProperties();
     $w->sendGetGroups();
     $w->sendGetBroadcastLists();
-    echo 'Send get groups';
 
     $sql = "UPDATE data SET login=?";
     $query = $db->prepare($sql);
@@ -188,27 +125,49 @@ foreach ($dir as $fileinfo) {
     if (!$fileinfo->isDot()) {
         $dmsg=file_get_contents($poll_dir.$fileinfo->getFilename());
 	$dnum = strtok($dmsg, "\n");
-	if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
-	else {
-		//doesn't begin with a +
-		if ($dnum=='DUTYNUM') { $dnum = '+0012345678'; }
-		//Let's send it to duty num anyway
-		$dnum = '+0012345678';
-		if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
-		echo 'Replaced with Duty '.$dnum."\n";
-	}
 	$dmsg=substr(strstr($dmsg,"\n"), 1);
 	if (($dnum!='') && ($dmsg!='')) {
-		echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-		$w->sendMessage($dnum, $dmsg);
+		if ($dnum[0]=='+') { 
+			//Job file contains a properly formatted number starting with a +
+			$dnum=ltrim ($dnum, '+'); //Remove + because WA servers dont like it
+			echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+			$w->sendMessage($dnum, $dmsg);
+		}
+		else {
+			if ($dnum=='DUTYNUM') {
+				//Send to duty number only
+				$dnum = getDutyNumber();
+				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+				$w->sendMessage($dnum, $dmsg);
+			}
+			else if ($dnum=='GROUPCHAT') {
+				$gc = getGroupChats();
+				while ($row = mysql_fetch_assoc($gc)) {
+					$dnum=$row['group_code'];
+					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+					$w->sendMessage($dnum, $dmsg);
+				}
+			} else {
+				//Anything without a + in front and not equal to "DUTYNUM" or "GROUPCHAT" will be defaulted.
+				$dnum = getDutyNumber();
+				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
+				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+				$w->sendMessage($dnum, $dmsg);
+				$gc = getGroupChats();
+				while ($row = mysql_fetch_assoc($gc)) {
+					$dnum=$row['group_code'];
+					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+					$w->sendMessage($dnum, $dmsg);
+				}
+			}
+		}
 	}
 	rename($poll_dir.$fileinfo->getFilename(), $complete_dir.$fileinfo->getFilename());
     }
 }
 sleep(5);
 }//for loop
-
-//$w->sendMessage('6593822131-1441414092', 'Poll loop completed');
 
 $w->disconnect();
 echo "Disconnected. Bye! :D\n";
@@ -222,9 +181,14 @@ function onSyncResult($result)
 }
 
 function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject, $participants, $admins, $fromGetGroup ) {
-	$select = "INSERT INTO `group_details` VALUES('', '$subject','$group_id','disabled')";
-	$query = mysql_query($select);
-	echo 'Inserted into db. '.$select;
+	$select = "SELECT group_names FROM `group_details` WHERE group_code='$group_id'";
+	$row = mysql_fetch_array(mysql_query($select));
+	if ($row) {
+		mysql_query("UPDATE group_details SET group_names='$subject' WHERE group_code='$group_id'");
+	} else {
+		$select = "INSERT INTO `group_details` VALUES('', '$subject','$group_id','disabled')";
+		$result = mysql_query($select);
+	}
 
 	echo "$mynumber\n";
 	echo "==> $group_id\n";
@@ -240,12 +204,14 @@ function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject,
 }
 
 function onGetGroups( $mynumber, $groupList ) {
-
-	echo "$mynumber\n";
+/****	echo "$mynumber\n";
 	foreach ($groupList as $gid) {
-		echo "$gid\n";
+		foreach ($gid as $gidd) {
+			echo "-> $gidd\n";
+		}
 	}
 	echo "=========\n";
+****/
 }
 
 function onGetRequestLastSeen( $mynumber, $from, $id, $seconds )
