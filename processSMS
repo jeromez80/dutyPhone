@@ -120,15 +120,15 @@ def saveSupervisorKeywords(supnumber, kw):
 
 def saveLastIncomingNumber(number):
 	print('Saving incoming number for quick reply')
-	dConfig= ConfigParser.RawConfigParser()
-	dConfig.read('config.ini')
-	dConfig.set('DutySystem', 'LastNumber', number)
-	with open('config.ini', 'wb') as configfile:
-		dConfig.write(configfile)
+#	dConfig= ConfigParser.RawConfigParser()
+#	dConfig.read('config.ini')
+#	dConfig.set('DutySystem', 'LastNumber', number)
+#	with open('config.ini', 'wb') as configfile:
+#		dConfig.write(configfile)
 
-	global SQLCur
+	global SQLCur,db
 	SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `last_incoming_message` = '"+number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
-
+	db.commit()
 	return True
 
 def getLastIncomingNumber():
@@ -142,7 +142,7 @@ def getLastIncomingNumber():
 	return number
 
 def processJobFile(filename):
-	global POLLPATH, DESTPATH, modem, DUTYNUM, SQLCur, db
+	global POLLPATH, DESTPATH, modem, DUTYNUM
 	lineno=1
 	destno = ''
 	msg = ''
@@ -157,19 +157,20 @@ def processJobFile(filename):
 					lineno += 1
 				else:
 					msg = '%s\n%s' % (msg,line)
+
+	newfilename = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
 	if (destno=="") or (msg==""):
 		print('Empty or incomplete job file detected. Ignoring...')
+		os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, newfilename))
 		return
 	if (destno=="GROUPCHAT"):
 		print('Ignoring group chat job API')
+		os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, newfilename))
 		return
 
-	SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'SMS-API-Job', '"+destno+"', '"+msg.strip()+"')")
-	db.commit()
 	print('Sending to %s -> %s' % (destno, msg.strip()))
 	modem.waitForNetworkCoverage(10)
 	safeSendSms(destno, msg.strip())
-	newfilename = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
 	print('Moving %s to %s' % ('%s%s' % (POLLPATH, filename), '%s%s'% (DESTPATH, newfilename)))
 	os.rename('%s%s' % (POLLPATH, filename), '%s%s' % (DESTPATH, newfilename))
 
@@ -185,15 +186,16 @@ def changeDutyNumber(sms):
     oldDutyNum = DUTYNUM
     DUTYNUM = sms.number
 
-    dConfig= ConfigParser.RawConfigParser()
-    dConfig.read('config.ini')
-    dConfig.set('DutySystem','DutyNumber',DUTYNUM)
-    with open('config.ini', 'wb') as configfile:
-        dConfig.write(configfile)
+#    dConfig= ConfigParser.RawConfigParser()
+#    dConfig.read('config.ini')
+#    dConfig.set('DutySystem','DutyNumber',DUTYNUM)
+#    with open('config.ini', 'wb') as configfile:
+#        dConfig.write(configfile)
 
-    #f = open('dutynumber.txt', 'w')
-    #f.write(DUTYNUM)
-    #f.close
+    global SQLCur,db
+    SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `current_duty_number` = '"+sms.number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
+    db.commit()
+
     modem.waitForNetworkCoverage(10)
     safeSendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
     time.sleep(1)

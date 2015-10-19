@@ -133,7 +133,7 @@ foreach ($dir as $fileinfo) {
 			$dnum=ltrim ($dnum, '+'); //Remove + because WA servers dont like it
 			echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 			$w->sendMessage($dnum, $dmsg);
-			mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
+			mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
 		}
 		else {
 			if ($dnum=='DUTYNUM') {
@@ -142,15 +142,15 @@ foreach ($dir as $fileinfo) {
 				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 				$w->sendMessage($dnum, $dmsg);
-				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
+				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
 			}
 			else if ($dnum=='GROUPCHAT') {
 				$gc = getGroupChats();
-				while ($row = mysql_fetch_assoc($gc)) {
+				while ($row = mysql_fetch_array($gc)) {
 					$dnum=$row['group_code'];
 					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 					$w->sendMessage($dnum, $dmsg);
-					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '".$row['group_names']."', '$dmsg')");
+					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '".$row['group_names']."', '$dmsg')");
 				}
 			} else {
 				//Anything without a + in front and not equal to "DUTYNUM" or "GROUPCHAT" will be defaulted.
@@ -158,12 +158,12 @@ foreach ($dir as $fileinfo) {
 				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 				$w->sendMessage($dnum, $dmsg);
-				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
+				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
 				$gc = getGroupChats();
-				while ($row = mysql_fetch_assoc($gc)) {
+				while ($row = mysql_fetch_array($gc)) {
 					$dnum=$row['group_code'];
 					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '".$row['group_names']."', '$dmsg')");
+					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '".$row['group_names']."', '$dmsg')");
 					$w->sendMessage($dnum, $dmsg);
 				}
 			}
