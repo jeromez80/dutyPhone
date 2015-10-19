@@ -19,7 +19,16 @@ Obj4: Poll a job folder for message. Sends them out where: first line contains d
 
 from __future__ import print_function
 
-import logging, time, os, ConfigParser, datetime
+import logging, time, os, ConfigParser, datetime, signal
+
+pid = str(os.getpid())
+pidfile = "processSMS.pid"
+
+if os.path.isfile(pidfile):
+    print("%s already exists, exiting" % pidfile)
+    exit()
+else:
+    file(pidfile, 'w').write(pid)
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
@@ -41,6 +50,11 @@ db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage"
 SQLCur = db.cursor() 
 
 from gsmmodem.modem import GsmModem
+
+def signal_handler(signal, frame):
+	global pidfile
+	os.unlink(pidfile)
+        exit(0)
 
 def loadDutyNumbers():
 	global DUTYNUM, SUPERVISORNUM, STAFFNUM
@@ -341,6 +355,8 @@ def handleSms(sms):
     print('Completed processing of incoming SMS...')
     
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     global modem
     print('Initializing modem...')
     # Uncomment the following line to see what the modem is doing:
