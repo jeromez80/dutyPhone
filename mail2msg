@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import smtpd, email, ConfigParser, os
-import asyncore
+import asyncore, signal
 
 class CustomSMTPServer(smtpd.SMTPServer):
     
@@ -30,7 +30,24 @@ class CustomSMTPServer(smtpd.SMTPServer):
 		f.close()
         return
 
+def signal_handler(signal, frame):
+	global pidfile
+	os.unlink(pidfile)
+        exit(0)
+
 global POLLPATHWA, POLLPATHSMS
+
+pid = str(os.getpid())
+pidfile = "mail2msg.pid"
+
+if os.path.isfile(pidfile):
+    print("%s already exists, exiting" % pidfile)
+    exit()
+else:
+    file(pidfile, 'w').write(pid)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
