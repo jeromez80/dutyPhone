@@ -26,7 +26,7 @@ class MyEvents extends AllEvents
 //        'onGetBroadcastLists',
 //        'onGetError',
 //        'onGetExtendAccount',
-//        'onGetGroupMessage',
+        'onGetGroupMessage',
 //        'onGetGroupParticipants',
         'onGetGroups',
 //        'onGetGroupsInfo',

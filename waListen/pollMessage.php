@@ -68,6 +68,7 @@ $w->eventManager()->bind('onGetMessage', 'onGetMessage');
 $w->eventManager()->bind('onGetGroupV2Info', 'onGetGroupV2Info');
 $w->eventManager()->bind('onGetGroups', 'onGetGroups');
 $w->eventManager()->bind('onGroupisCreated', 'onGroupisCreated');
+$w->eventManager()->bind("onGetGroupMessage", "onGetGroupMessage");
 $w->eventManager()->bind('onGetSyncResult', 'onSyncResult');
 $w->eventManager()->bind('onGetRequestLastSeen', 'onGetRequestLastSeen');
 $w->eventManager()->bind('onPresenceAvailable', 'onPresenceAvailable');
@@ -99,8 +100,7 @@ if ($login == '1')
     $query->execute(array('0'));
 }
 else {
-$w->sendGetGroups();
-echo 'Send get groups';
+	$w->sendGetGroups();
 }
 //$w->sendGetGroupV2Info();
 $w->sendGetPrivacyBlockedList();
@@ -119,7 +119,8 @@ $GLOBALS["current_contact"];
       #print($m->NodeString("") . "\n");
     }
 
-for ($loop=0; $loop<10; $loop++) {
+for ($loop=0; $loop<9; $loop++) {
+$w->pollMessage();
 $dir = new DirectoryIterator(dirname($poll_dir.'*'));
 foreach ($dir as $fileinfo) {
     if (!$fileinfo->isDot()) {
@@ -132,6 +133,7 @@ foreach ($dir as $fileinfo) {
 			$dnum=ltrim ($dnum, '+'); //Remove + because WA servers dont like it
 			echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 			$w->sendMessage($dnum, $dmsg);
+			mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
 		}
 		else {
 			if ($dnum=='DUTYNUM') {
@@ -140,6 +142,7 @@ foreach ($dir as $fileinfo) {
 				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 				$w->sendMessage($dnum, $dmsg);
+				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
 			}
 			else if ($dnum=='GROUPCHAT') {
 				$gc = getGroupChats();
@@ -147,6 +150,7 @@ foreach ($dir as $fileinfo) {
 					$dnum=$row['group_code'];
 					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 					$w->sendMessage($dnum, $dmsg);
+					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '".$row['group_names']."', '$dmsg')");
 				}
 			} else {
 				//Anything without a + in front and not equal to "DUTYNUM" or "GROUPCHAT" will be defaulted.
@@ -154,10 +158,12 @@ foreach ($dir as $fileinfo) {
 				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
 				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
 				$w->sendMessage($dnum, $dmsg);
+				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '$dnum', '$dmsg')");
 				$gc = getGroupChats();
 				while ($row = mysql_fetch_assoc($gc)) {
 					$dnum=$row['group_code'];
 					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WhatsApp', '".$row['group_names']."', '$dmsg')");
 					$w->sendMessage($dnum, $dmsg);
 				}
 			}
@@ -242,9 +248,15 @@ function onGetMessage($mynumber, $from, $id, $type, $time, $name, $body)
     $number = ExtractNumber($from);
     echo " < New message from $name ($number) >";
     echo $body;
-    if ($body=='status') {
-    	$GLOBALS["wa"]->sendMessage('6593822131' , "takeover=Takeover now.\nstatus=Check status\nhelp=Get help");	
-    }
+	mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), '$number (WA)', 'MODEM', '$body')");
+}
+
+function onGetGroupMessage($mynumber, $from_group_jid, $from_user_jid, $id, $type, $time, $name, $body)
+{
+    $number = ExtractNumber($from_user_jid);
+    echo "New message from $name: $body";
+	$result = mysql_fetch_array(mysql_query("SELECT group_names FROM `group_details` WHERE group_code='".ExtractNumber($from_group_jid)."'"));
+	mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), '$name ($number)', '".$result['group_names']." (GroupChat)', '$body')");
 }
 
 function onGetImage($mynumber, $from, $id, $type, $time, $name, $size, $url, $file, $mimeType, $fileHash, $width, $height, $preview, $caption)
