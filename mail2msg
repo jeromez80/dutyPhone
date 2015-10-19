@@ -69,14 +69,14 @@ pid = str(os.getpid())
 pidfile = "mail2msg.pid"
 
 if os.path.isfile(pidfile):
-        with open(pidfile, 'r') as f:
-            curpid=int(f.read().strip())
-        if pid_exists(curpid):
-            print("%s already exists, exiting" % pidfile)
-            exit()
-        else:
-            print("%s exists, but process is dead. Creating now process file." % pidfile)
-    file(pidfile, 'w+').write(pid)
+    with open(pidfile, 'r') as f:
+        curpid=int(f.read().strip())
+    if pid_exists(curpid):
+        print("%s already exists, exiting" % pidfile)
+        exit()
+    else:
+        print("%s exists, but process is dead. Creating now process file." % pidfile)
+file(pidfile, 'w+').write(pid)
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
