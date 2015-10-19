@@ -19,16 +19,7 @@ Obj4: Poll a job folder for message. Sends them out where: first line contains d
 
 from __future__ import print_function
 
-import logging, time, os, ConfigParser, datetime, signal
-
-pid = str(os.getpid())
-pidfile = "processSMS.pid"
-
-if os.path.isfile(pidfile):
-    print("%s already exists, exiting" % pidfile)
-    exit()
-else:
-    file(pidfile, 'w').write(pid)
+import logging, time, os, ConfigParser, datetime, signal, errno
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
@@ -44,6 +35,7 @@ SUPERVISORNUM = []
 STAFFNUM = []
 SILENTNUM = []
 STATUS_ALL=4
+pidfile = "processSMS.pid"
 
 import MySQLdb
 db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
@@ -55,6 +47,34 @@ def signal_handler(signal, frame):
 	global pidfile
 	os.unlink(pidfile)
         exit(0)
+
+def pid_exists(pid):
+    """Check whether pid exists in the current process table.
+    UNIX only.
+    """
+    if pid < 0:
+        return False
+    if pid == 0:
+        # According to "man 2 kill" PID 0 refers to every process
+        # in the process group of the calling process.
+        # On certain systems 0 is a valid PID but we have no way
+        # to know that in a portable fashion.
+        raise ValueError('invalid PID 0')
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            # ESRCH == No such process
+            return False
+        elif err.errno == errno.EPERM:
+            # EPERM clearly means there's a process to deny access to
+            return True
+        else:
+            # According to "man 2 kill" possible error values are
+            # (EINVAL, EPERM, ESRCH)
+            raise
+    else:
+        return True
 
 def loadDutyNumbers():
 	global DUTYNUM, SUPERVISORNUM, STAFFNUM
@@ -81,21 +101,6 @@ def loadDutyNumbers():
 		else:
 			print(u'Invalid entry in staff list: {0}'.format(row[1]))
 
-#	try:
-#  		with open('staffnumber.txt') as f:
-# 			for line in f:
-# 				if line:            # lines (ie skip them)
-#					if line.split()[1] == 'S':
-#						SUPERVISORNUM.append(line.split()[0])
-#						print(u'Loaded supervisor number: {0}'.format(line.split()[0]))
-#					elif line.split()[1] == 'D':
-#						STAFFNUM.append(line.split()[0])
-#						print(u'Loaded staff number: {0}'.format(line.split()[0]))
-#					else:
-#						print(u'Invalid entry in staff list: {0}'.format(line))
-#	except IOError:
-#		print('Staff number list is empty. Please create staffnumber.txt yourself')
-
 def loadSupervisorKeywords(supnumber):
     kw = []
     print(u'Loading keywords for: {0}'.format(supnumber))
@@ -120,12 +125,6 @@ def saveSupervisorKeywords(supnumber, kw):
 
 def saveLastIncomingNumber(number):
 	print('Saving incoming number for quick reply')
-#	dConfig= ConfigParser.RawConfigParser()
-#	dConfig.read('config.ini')
-#	dConfig.set('DutySystem', 'LastNumber', number)
-#	with open('config.ini', 'wb') as configfile:
-#		dConfig.write(configfile)
-
 	global SQLCur,db
 	SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `last_incoming_message` = '"+number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
 	db.commit()
@@ -136,9 +135,6 @@ def getLastIncomingNumber():
 	global SQLCur
 	SQLCur.execute("SELECT `last_incoming_message` FROM `smartMessage`.`mmg_phone_numbers` WHERE `mmg_phone_numbers`.`id` = 1;")
 	number = SQLCur.fetchone()[0]
-#	dConfig= ConfigParser.RawConfigParser()
-#	dConfig.read('config.ini')
-#	number = dConfig.get('DutySystem', 'LastNumber')
 	return number
 
 def processJobFile(filename):
@@ -186,12 +182,6 @@ def changeDutyNumber(sms):
     oldDutyNum = DUTYNUM
     DUTYNUM = sms.number
 
-#    dConfig= ConfigParser.RawConfigParser()
-#    dConfig.read('config.ini')
-#    dConfig.set('DutySystem','DutyNumber',DUTYNUM)
-#    with open('config.ini', 'wb') as configfile:
-#        dConfig.write(configfile)
-
     global SQLCur,db
     SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `current_duty_number` = '"+sms.number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
     db.commit()
@@ -210,8 +200,7 @@ def changeDutyNumber(sms):
 
 def safeSendSms(number, sms):
 	global modem, SQLCur, db
-        query = "INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), 'MODEM', '"+number+"', '"+sms+"')"
-        SQLCur.execute(query)
+        SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), 'MODEM', %s, %s)",(number,sms))
 	db.commit()
 
 	if len(sms) <= 160:
@@ -229,8 +218,7 @@ def safeSendSms(number, sms):
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SQLCur, db, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
-    query = "INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), '"+sms.number+"', 'MODEM', '"+sms.text+"')"
-    SQLCur.execute(query)
+    SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
     db.commit()
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
       keyword = sms.text.lower().split()[0]
@@ -360,6 +348,19 @@ def handleSms(sms):
     print('Completed processing of incoming SMS...')
     
 def main():
+
+    pid = str(os.getpid())
+
+    if os.path.isfile(pidfile):
+        with open(pidfile, 'r') as f:
+            curpid=int(f.read().strip())
+        if pid_exists(curpid):
+            print("%s already exists, exiting" % pidfile)
+            exit()
+        else:
+            print("%s exists, but process is dead. Creating now process file." % pidfile)
+    file(pidfile, 'w+').write(pid)
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     global modem
@@ -387,7 +388,7 @@ def main():
     for rSms in messageList:
       try:
           print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
-          SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), '"+rsms.number+"', 'MODEM (Offline)', '"+rsms.text+"')")
+          SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), %s, 'MODEM (Offline)', %s)",(rsms.number,rsms.text))
           handleSms(rSms)
       except:
           print('Ooops, error in printing/handling message')
