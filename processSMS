@@ -160,8 +160,11 @@ def processJobFile(filename):
 	if (destno=="") or (msg==""):
 		print('Empty or incomplete job file detected. Ignoring...')
 		return
+	if (destno=="GROUPCHAT"):
+		print('Ignoring group chat job API')
+		return
 
-	SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'API-Job', '"+destno+"', '"+msg.strip()+"')")
+	SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'SMS-API-Job', '"+destno+"', '"+msg.strip()+"')")
 	db.commit()
 	print('Sending to %s -> %s' % (destno, msg.strip()))
 	modem.waitForNetworkCoverage(10)
