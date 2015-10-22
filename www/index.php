@@ -9,11 +9,16 @@ if(isset($_POST['submit']))
 		$update	= "UPDATE ".Suffix."mmg_phone_numbers SET `sms_message_center`='".$sms_number."', `current_duty_number`='".$current_number."', `last_incoming_message`='".$last_number."' where `id`='1'";
 		$query = mysql_query($update);
 		$newIP = $_POST['staticIP'];
+		$newGW = $_POST['staticGW'];
 		if ($newIP == '') {
 			unlink('setIP.txt');
 		} else {
-			//echo "Saved new static IP: $newIP - Please reboot for settings to take effect.";
 			file_put_contents('setIP.txt', $newIP);
+		}
+		if ($newGW == '') {
+			unlink('setGW.txt');
+		} else {
+			file_put_contents('setGW.txt', $newGW);
 		}
 }
 if(isset($_POST['action'])){
@@ -105,6 +110,8 @@ $staticIP = file_get_contents('setIP.txt');
             <div class="large-8 medium-8 columns">
               <label>Network IPv4 Address (Leave blank for DHCP)</label>
               <input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
+              <label>Network IPv4 Gateway</label>
+              <input type="text" name="staticGW" placeholder="Leave blank for DHCP assigned value" value="<?php if(isset($staticGW)) { echo $staticGW; }?>"/>
             </div>
             <div class="large-4 medium-4 columns">
 		<?php
