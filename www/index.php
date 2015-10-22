@@ -80,6 +80,7 @@ while($row=mysql_fetch_array($query))
 }
 
 $staticIP = file_get_contents('setIP.txt');
+$staticGW = file_get_contents('setGW.txt');
 
 ?>
 <!doctype html>
