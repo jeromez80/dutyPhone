@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import smtpd, email, ConfigParser, os
+import smtpd, email, ConfigParser, os, errno
 import asyncore, signal
 
 class CustomSMTPServer(smtpd.SMTPServer):
