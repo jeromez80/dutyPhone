@@ -11,6 +11,7 @@ class CustomSMTPServer(smtpd.SMTPServer):
         print 'Message addressed to  :', rcpttos
         print 'Message length        :', len(data)
 	dmsg = email.message_from_string(data)
+	dmsg = string.replace(dmsg, '=0D=0A', '\n', 1)
 	if dmsg.is_multipart():
 		for payload in dmsg.get_payload():
 		# if payload.is_multipart(): ...
