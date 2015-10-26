@@ -369,7 +369,7 @@ def main():
     #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
     #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     modem = GsmModem(PORT, BAUDRATE, smsReceivedCallbackFunc=handleSms)
-    //Need to check whether the port was available. if not available ,may need to reboot the appliance?
+    #Need to check whether the port was available. if not available ,may need to reboot the appliance?
     modem.smsTextMode = False 
     modem.connect(PIN)
     modem.smsc = SMSC_NUM
