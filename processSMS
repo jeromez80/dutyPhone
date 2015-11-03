@@ -18,8 +18,8 @@ Obj4: Poll a job folder for message. Sends them out where: first line contains d
 """
 
 from __future__ import print_function
-
-import logging, time, os, ConfigParser, datetime, signal, errno
+from gsmmodem import exceptions
+import logging, time, os, ConfigParser, datetime, signal, errno, sys
 
 dConfig = ConfigParser.ConfigParser()
 dConfig.read("config.ini")
@@ -46,7 +46,7 @@ from gsmmodem.modem import GsmModem
 def signal_handler(signal, frame):
 	global pidfile
 	os.unlink(pidfile)
-        exit(0)
+        sys.exit(0)
 
 def pid_exists(pid):
     """Check whether pid exists in the current process table.
@@ -204,13 +204,23 @@ def safeSendSms(number, sms):
 	db.commit()
 
 	if len(sms) <= 160:
-		modem.sendSms(number, sms)
+		try:
+			modem.sendSms(number, sms)
+		except Exception as err:
+			errorCode = err.args
+			print('Error received in sending sms. Terminating... CMS Code: %s' % errorCode)
+			#Should we exit or return false?
+			sys.exit("CMS Error")
 		return True
 	text = sms
 	count = 1
 	while len(text) > 0:
 		print('Sending as long sms... part %i=%s' % (count,text[:150]))
-		modem.sendSms(number, text[:150])
+		try:
+			modem.sendSms(number, text[:150])
+		except Exception as err:
+			errorCode = err.args
+			print('Error received in sending sms (skipping multipart chunk). CMS Code: %s' % errorCode)
 		time.sleep(3)
 		count = count + 1
 		text = text[150:]
@@ -355,8 +365,7 @@ def main():
         with open(pidfile, 'r') as f:
             curpid=int(f.read().strip())
         if pid_exists(curpid):
-            print("%s already exists, exiting" % pidfile)
-            exit()
+            sys.exit("Process exists. Exiting...")
         else:
             print("%s exists, but process is dead. Creating now process file." % pidfile)
     file(pidfile, 'w+').write(pid)
@@ -371,7 +380,11 @@ def main():
     modem = GsmModem(PORT, BAUDRATE, smsReceivedCallbackFunc=handleSms)
     #Need to check whether the port was available. if not available ,may need to reboot the appliance?
     modem.smsTextMode = False 
-    modem.connect(PIN)
+    try:
+        modem.connect(PIN)
+    except:
+        print("Cannot connect to modem. Terminating.")
+	sys.exit(0)
     modem.smsc = SMSC_NUM
     time.sleep(1)
     try:
