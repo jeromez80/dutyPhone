@@ -228,8 +228,14 @@ def safeSendSms(number, sms):
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SQLCur, db, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
-    SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
-    db.commit()
+    try:
+        SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
+        db.commit()
+    except MySQLdb.Error, e:
+        try:
+            print("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+        except IndexError:
+            print("MySQL Error: %s" % str(e))
     if sms.number in STAFFNUM or sms.number in SUPERVISORNUM:
       keyword = sms.text.lower().split()[0]
       #============ TAKEOVER DUTY ===============
