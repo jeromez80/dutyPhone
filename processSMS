@@ -38,8 +38,6 @@ STATUS_ALL=4
 pidfile = "processSMS.pid"
 
 import MySQLdb
-db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
-SQLCur = db.cursor() 
 
 from gsmmodem.modem import GsmModem
 
@@ -83,7 +81,8 @@ def loadDutyNumbers():
 #    dConfig.read('config.ini')
 #    DUTYNUM = dConfig.get('DutySystem', 'DutyNumber')
 
-	global SQLCur
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
 	SQLCur.execute("SELECT `current_duty_number` FROM `smartMessage`.`mmg_phone_numbers` WHERE `mmg_phone_numbers`.`id` = 1;")
 	DUTYNUM = SQLCur.fetchone()[0]
 
@@ -125,14 +124,16 @@ def saveSupervisorKeywords(supnumber, kw):
 
 def saveLastIncomingNumber(number):
 	print('Saving incoming number for quick reply')
-	global SQLCur,db
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
 	SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `last_incoming_message` = '"+number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
 	db.commit()
 	return True
 
 def getLastIncomingNumber():
 	print('Retrieving last incoming number for quick reply')
-	global SQLCur
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
 	SQLCur.execute("SELECT `last_incoming_message` FROM `smartMessage`.`mmg_phone_numbers` WHERE `mmg_phone_numbers`.`id` = 1;")
 	number = SQLCur.fetchone()[0]
 	return number
@@ -178,28 +179,32 @@ def generateWordList(kw):
     return wordlist[1:]
 
 def changeDutyNumber(sms):
-    global DUTYNUM, SILENTNUM, modem
-    oldDutyNum = DUTYNUM
-    DUTYNUM = sms.number
+	global DUTYNUM, SILENTNUM, modem
+	oldDutyNum = DUTYNUM
+	DUTYNUM = sms.number
 
-    global SQLCur,db
-    SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `current_duty_number` = '"+sms.number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
-    db.commit()
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
+	SQLCur.execute("UPDATE `smartMessage`.`mmg_phone_numbers` SET `current_duty_number` = '"+sms.number+"' WHERE `mmg_phone_numbers`.`id` = 1;")
+	db.commit()
 
-    modem.waitForNetworkCoverage(10)
-    safeSendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
-    time.sleep(1)
-    modem.setForwarding(0, 3, DUTYNUM)
-    time.sleep(2)
-    response = modem.setForwarding(0, 1, DUTYNUM)
-    time.sleep(2)
-    print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
-    modem.waitForNetworkCoverage(10)
-    safeSendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
-    print(u'Old duty number sent relief message {0}'.format(oldDutyNum))
+	modem.waitForNetworkCoverage(10)
+	safeSendSms(DUTYNUM, u'Thank you, your number {0} has been registered as the duty phone. Good luck!'.format(DUTYNUM))
+	time.sleep(1)
+	modem.setForwarding(0, 3, DUTYNUM)
+	time.sleep(2)
+	response = modem.setForwarding(0, 1, DUTYNUM)
+	time.sleep(2)
+	print(u'Duty number is now {0} - {1}'.format(DUTYNUM, response))
+	modem.waitForNetworkCoverage(10)
+	safeSendSms(oldDutyNum, u'Woohoo! {0} has just taken over the duty from you. You will no longer receive alerts or calls.'.format(DUTYNUM))
+	print(u'Old duty number sent relief message {0}'.format(oldDutyNum))
 
 def safeSendSms(number, sms):
-	global modem, SQLCur, db
+	global modem
+
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
         SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), 'MODEM', %s, %s)",(number,sms))
 	db.commit()
 
@@ -226,9 +231,11 @@ def safeSendSms(number, sms):
 		text = text[150:]
 
 def handleSms(sms):
-    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, SQLCur, db, modem
+    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, modem
     print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
     try:
+	db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+	SQLCur = db.cursor() 
         SQLCur.execute("INSERT INTO `smartMessage`.`messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
         db.commit()
     except MySQLdb.Error, e:
@@ -405,6 +412,8 @@ def main():
     messageList.extend(modem.listStoredSms(STATUS_ALL, 'SM', True))
     messageList.extend(modem.listStoredSms(STATUS_ALL, 'SR', True))
     messageList.extend(modem.listStoredSms(STATUS_ALL, None, True))
+    db = MySQLdb.connect(host="localhost", user="root", passwd="", db="smartMessage")
+    SQLCur = db.cursor() 
     for rSms in messageList:
       try:
           print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
