@@ -54,7 +54,7 @@ function getDutyNumber() {
 
 function getGroupChats() {
 	//Get duty number from MySQL
-	$select = "SELECT group_code FROM `group_details` WHERE status='enable'";
+	$select = "SELECT group_code FROM `WAGroupChats` WHERE status='enable'";
 	return mysql_query($select);
 }
 
@@ -187,12 +187,12 @@ function onSyncResult($result)
 }
 
 function onGetGroupV2Info ( $mynumber, $group_id, $creator, $creation, $subject, $participants, $admins, $fromGetGroup ) {
-	$select = "SELECT group_names FROM `group_details` WHERE group_code='$group_id'";
+	$select = "SELECT group_names FROM `WAGroupChats` WHERE group_code='$group_id'";
 	$row = mysql_fetch_array(mysql_query($select));
 	if ($row) {
-		mysql_query("UPDATE group_details SET group_names='$subject' WHERE group_code='$group_id'");
+		mysql_query("UPDATE WAGroupChats SET group_names='$subject' WHERE group_code='$group_id'");
 	} else {
-		$select = "INSERT INTO `group_details` VALUES('', '$subject','$group_id','disabled')";
+		$select = "INSERT INTO `WAGroupChats` VALUES('', '$subject','$group_id','disabled')";
 		$result = mysql_query($select);
 	}
 
@@ -249,14 +249,15 @@ function onGetMessage($mynumber, $from, $id, $type, $time, $name, $body)
     echo " < New message from $name ($number) >";
     echo $body;
 	mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), '$number (WA)', 'MODEM', '$body')");
+	mysql_query("INSERT INTO `IncomingWA` VALUES (NULL, NULL, '$time', '$name ($number)', '$mynumber', '$body', 0)");
 }
 
 function onGetGroupMessage($mynumber, $from_group_jid, $from_user_jid, $id, $type, $time, $name, $body)
 {
     $number = ExtractNumber($from_user_jid);
     echo "New message from $name: $body";
-	$result = mysql_fetch_array(mysql_query("SELECT group_names FROM `group_details` WHERE group_code='".ExtractNumber($from_group_jid)."'"));
-	mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), '$name ($number)', '".$result['group_names']." (GroupChat)', '$body')");
+	$result = mysql_fetch_array(mysql_query("SELECT group_names FROM `WAGroupChats` WHERE group_code='".ExtractNumber($from_group_jid)."'"));
+	mysql_query("INSERT INTO `IncomingWA` VALUES (NULL, NULL, '$time', '$name ($number)', '".$result['group_names']." (GroupChat)', '$body', 0)");
 }
 
 function onGetImage($mynumber, $from, $id, $type, $time, $name, $size, $url, $file, $mimeType, $fileHash, $width, $height, $preview, $caption)

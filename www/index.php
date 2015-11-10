@@ -69,11 +69,11 @@ if(isset($_POST['newWAlic']))
 	}
 }
  
-$select = "select * from `group_details`";
+$select = "select * from `WAGroupChats`";
 $query = mysql_query($select);
 while($row=mysql_fetch_array($query))
 {
-	$group_deails[] = $row;		
+	$group_details[] = $row;		
 }
 
 $staticIP = file_get_contents('setIP.txt');
@@ -219,7 +219,7 @@ $staticGW = file_get_contents('setGW.txt');
             <div class="large-12 medium-12 columns">
             <p>List of Group Chats:</p>
             <ul>
-			  <?php foreach($group_deails as $group_data){ ?>	
+			  <?php foreach($group_details as $group_data){ ?>	
               <li><?php echo $group_data['group_names']; ?></a> <input class="state" type="checkbox" value ="<?php echo $group_data['status']; ?>" rel="<?php echo $group_data['id'] ?>"<?php if($group_data['status'] == "enable"){ echo 'checked'; } ?> /><label>Enable</label></li>
               <?php }	?>	
 			</ul>
