@@ -2,141 +2,48 @@
 include("config.php");
 include("classes/ConfigData.php");
 $config = new ConfigData();
- 
-if(isset($_POST['submit']))
-{
-		$sms_number = $_POST['sms_message_centre'];
-		if (!$config->set_smsc($sms_number)) { echo 'Set SMSC Error!'; }
-		$last_number = $_POST['last_incoming_message_form'];
-		if (!$config->set_lastmsgnum($last_number)) { echo 'Set LastNum  Error!'; }
-		$current_number = $_POST['current_duty_number'];
-		if (!$config->set_dutynum($current_number)) { echo 'Set DutyNum Error!'; }
-
-		$newIP = $_POST['staticIP'];
-		$newGW = $_POST['staticGW'];
-		if ($newIP == '') {
-			unlink('setIP.txt');
-		} else {
-			file_put_contents('setIP.txt', $newIP);
-		}
-		if ($newGW == '') {
-			unlink('setGW.txt');
-		} else {
-			file_put_contents('setGW.txt', $newGW);
-		}
-}
-if(isset($_POST['action'])){
-	$id	=	$_POST['id'];
-	mysql_query("DELETE from superviser_number WHERE id='".$id."'");
-	die;
-}
-if(isset($_POST['submit2']))
-{
-		$superviser_number = $_POST['superviser_number'];
-		$number_type = $_POST['number_type'];
-		$insert = "Insert INTO superviser_number SET `number`='".$superviser_number."',number_type='".$number_type."' ";
-		$query_insert = mysql_query($insert);
-}
-if(isset($_POST['submit3']))
-{
-		$superviser_number = $_POST['staff_number'];
-		$number_type = $_POST['number_type'];
-		$insert = "Insert INTO superviser_number SET `number`='".$superviser_number."',number_type='".$number_type."' ";
-		$query_insert = mysql_query($insert);
-}
-if(isset($_POST['reboot']))
-{
-		file_put_contents('reboot.now', 'via GUI');
-}
-if(isset($_POST['newWAlic']))
-{
-	$decoded = base64_decode($_POST['newlicense'], true);
-	if ($decoded === false) { $licmsg = 'Invalid license.'; }
-	$lines = explode(PHP_EOL, $decoded);
-	if ($lines[0] != 'GeekWAlic00011') {
-		$licmsg = '<font color="red">This is not a valid license file.</font>';
-	} else {
-		//VALID
-		$newnum = $lines[1];
-		$newpw = $lines[2];
-		if (substr($newnum,0,2) != '65') {
-			$licmsg = '<font color="red">The number contained in the license file is invalid.</font>';
-		} else {
-			mysql_query("TRUNCATE data;");
-			mysql_query("INSERT INTO data VALUES ('$newnum', '$newpw', 'SmartMessage', '1')");
-			$licmsg = '<font color="green">The new number '.$newnum.' has been registered.</font>';
-		}
-	}
-}
- 
-$select = "select * from `WAGroupChats`";
-$query = mysql_query($select);
-while($row=mysql_fetch_array($query))
-{
-	$group_details[] = $row;		
-}
-
-$staticIP = file_get_contents('setIP.txt');
-$staticGW = file_get_contents('setGW.txt');
-
+include("actions.php"); 
 ?>
 <!doctype html>
 <html class="no-js" lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart-Message Gateway :: Configuration</title>
-    <link rel="stylesheet" href="css/foundation.css" />
-    <script src="js/vendor/modernizr.js"></script>
-	
-  </head>
-  <body>
+<?php include("header.php"); ?>
+<body>
     
     <div class="row">
       <div class="large-12 columns">
         <h1>Smart-Message Gateway Setup</h1>
       </div>
     </div>
-    
+
+<?php include("tabs.php"); ?>
+
+	<div class="tabs-content">
+		<div class="content active" id="panel11">
     <div class="row">
-      <div class="large-12 columns">
+      <div class="large-10 columns">
         <div class="panel">
           <h3>Thank you for choosing Smart-Message! </h3>
           <form name="mmg_numbers" method="post" action="#">
           <p>To access this appliance from your network, please configure the network options below. Remember to connect your network to the correct physical port on this appliance.</p>
           <div class="row">
-            <div class="large-8 medium-8 columns">
+            <div class="large-6 medium-6 columns">
               <label>Network IPv4 Address (Leave blank for DHCP)</label>
               <input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php if(isset($staticIP)) { echo $staticIP; }?>"/>
               <label>Network IPv4 Gateway</label>
               <input type="text" name="staticGW" placeholder="Leave blank for DHCP assigned value" value="<?php if(isset($staticGW)) { echo $staticGW; }?>"/>
+              <label>Network IPv4 DNS</label>
+              <input type="text" name="staticDNS" placeholder="Leave blank for DHCP assigned value" value="<?php if(isset($staticDNS)) { echo $staticDNS; }?>"/>
             </div>
-            <div class="large-4 medium-4 columns">
+            <div class="large-6 medium-6 columns">
 		<?php
 			if (file_exists('reboot.now')) { echo '<label>Rebooting... Please wait a minute.</label>'; }
 		?>
               <input type="submit" class="small radius button" name="reboot" value="Reboot Smart-Message"/>
             </div>
           </div>
-          <p>Depending on your messaging provider, please configure the appropriate settings here.</p>
-          <div class="row">
-            <div class="large-4 medium-4 columns">
-              <label>SMS Message Center</label>
-              <input type="text" name="sms_message_centre" placeholder="SMSC Number from Telco" value="<?php echo $config->get_smsc(); ?>"/>
-            </div>
-            <div class="large-4 medium-4 columns">
-              <label>Current Duty Number</label>
-              <input type="text" name="current_duty_number" placeholder="Default to receive alerts" value="<?php echo $config->get_dutynum(); ?>"/>
-            </div>
-            <div class="large-4 medium-4 columns">
-	      <label>Last Incoming Message From</label>
-              <input type="text" name="last_incoming_message_form" placeholder="For replying to SMS" value="<?php echo $config->get_lastmsgnum(); ?>"/>
-            </div>
-          </div>
-		 
 		  <div class="row">
 			<div class="panel" style="border:none;">
-				<input type="submit" class="small radius button" value="Update" name="submit">
+				<input type="submit" class="small radius button" value="Save Network Configuration" name="btnSaveNetwork">
 			</div>
 			 </form>
 		  </div>
@@ -154,12 +61,16 @@ $staticGW = file_get_contents('setGW.txt');
         </div>
       </div>
     </div>
+		</div>
 
+<?php include("tabMobileNetwork.php"); ?>
+
+		<div class="content" id="panel21">
     <div class="row">
-      <div class="large-6 medium-6 columns">
+      <div class="large-10 medium-10 columns">
         <div class="panel">
           <div class="row">
-            <div class="large-6 medium-6 columns">
+            <div class="large-12 medium-12 columns">
               <h4>SMS Options</h4>
             </div>
           </div>
@@ -197,8 +108,12 @@ $staticGW = file_get_contents('setGW.txt');
           </div>
         </div>
       </div>
+    </div>
+	</div>
 
-      <div class="large-6 medium-6 columns">
+	<div class="content" id="panel31">
+    <div class="row">
+      <div class="large-10 medium-10 columns">
         <div class="panel">
           <div class="row">
             <div class="large-12 medium-12 columns">
@@ -228,10 +143,12 @@ $staticGW = file_get_contents('setGW.txt');
         </div>
       </div>
     </div>
+	</div>
 
 
+	<div class="content" id="panel41">
     <div class="row">
-      <div class="large-12 medium-12 columns">
+      <div class="large-10 medium-10 columns">
         <div class="panel">
         <h3>Message Log</h3>
 <?php
@@ -256,6 +173,8 @@ while($row=mysql_fetch_array($query))
         </div>
       </div>
     </div>
+	</div>
+	</div>
 
     <script src="js/velocity.js"></script>
     <script src="js/mtree.js"></script>
