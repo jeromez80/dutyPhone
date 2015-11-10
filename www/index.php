@@ -1,13 +1,17 @@
 <?php
 include("config.php");
+include("classes/ConfigData.php");
+$config = new ConfigData();
  
 if(isset($_POST['submit']))
 {
 		$sms_number = $_POST['sms_message_centre'];
+		if (!$config->set_smsc($sms_number)) { echo 'Set SMSC Error!'; }
 		$last_number = $_POST['last_incoming_message_form'];
-		$current_number = $_POST['current_duty_number'];				
-		$update	= "UPDATE ".Suffix."mmg_phone_numbers SET `sms_message_center`='".$sms_number."', `current_duty_number`='".$current_number."', `last_incoming_message`='".$last_number."' where `id`='1'";
-		$query = mysql_query($update);
+		if (!$config->set_lastmsgnum($last_number)) { echo 'Set LastNum  Error!'; }
+		$current_number = $_POST['current_duty_number'];
+		if (!$config->set_dutynum($current_number)) { echo 'Set DutyNum Error!'; }
+
 		$newIP = $_POST['staticIP'];
 		$newGW = $_POST['staticGW'];
 		if ($newIP == '') {
@@ -65,13 +69,6 @@ if(isset($_POST['newWAlic']))
 	}
 }
  
-$select = "select * from `mmg_phone_numbers`";
-$query = mysql_query($select);
-while($row=mysql_fetch_array($query))
-{
-	$data[] = $row;		
-}
-
 $select = "select * from `group_details`";
 $query = mysql_query($select);
 while($row=mysql_fetch_array($query))
@@ -125,15 +122,15 @@ $staticGW = file_get_contents('setGW.txt');
           <div class="row">
             <div class="large-4 medium-4 columns">
               <label>SMS Message Center</label>
-              <input type="text" name="sms_message_centre" placeholder="SMSC Number" value="<?php if(isset($data['0']['sms_message_center'])) { echo $data['0']['sms_message_center']; }?>"/>
+              <input type="text" name="sms_message_centre" placeholder="SMSC Number from Telco" value="<?php echo $config->get_smsc(); ?>"/>
             </div>
             <div class="large-4 medium-4 columns">
               <label>Current Duty Number</label>
-              <input type="text" name="current_duty_number" placeholder="+65" value="<?php if(isset($data['0']['current_duty_number'])) { echo $data['0']['current_duty_number']; }?>"/>
+              <input type="text" name="current_duty_number" placeholder="Default to receive alerts" value="<?php echo $config->get_dutynum(); ?>"/>
             </div>
             <div class="large-4 medium-4 columns">
 	      <label>Last Incoming Message From</label>
-              <input type="text" name="last_incoming_message_form" placeholder="+65xxxxx" value="<?php if(isset($data['0']['last_incoming_message'])) { echo $data['0']['last_incoming_message']; }?>"/>
+              <input type="text" name="last_incoming_message_form" placeholder="For replying to SMS" value="<?php echo $config->get_lastmsgnum(); ?>"/>
             </div>
           </div>
 		 
