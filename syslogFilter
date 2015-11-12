@@ -1,0 +1,151 @@
+#!/usr/bin/python
+
+import time, os, errno
+import MySQLdb
+from docutils.nodes import row
+
+pidfile = "processSyslogMonitor.pid"
+
+db = MySQLdb.connect(host="127.0.0.1",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
+#db = MySQLdb.connect(host="119.81.44.115",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
+SQLCur = db.cursor()
+kw = []
+
+def pid_exists(pid):
+    """Check whether pid exists in the current process table.
+    UNIX only.
+    """
+    if pid < 0:
+        return False
+    if pid == 0:
+        # According to "man 2 kill" PID 0 refers to every process
+        # in the process of the calling process.
+        # On certain systems 0 is a valid PID but we have no way
+        # to know that in a portable fashion.
+        raise ValueError('invalid PID 0')
+    try:
+        os.kill(pid,0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            #ESRCH == no such process
+            return False
+        elif err.errno == errno.EPERM:
+            return True
+        else:
+            #According to man 2 kill" possible error values are
+            # (EINVAL, EPERM, ERCH)
+            raise
+        
+    else:
+        return True
+
+def getKeywordFromDB():
+    
+    global SQLCur, kw
+
+    SQLCur.execute("Select * from `Keywords`;")
+    kw = SQLCur.fetchall()
+    #for row in SQLCur:
+     #   kw.append(row[0])
+      #  print row[1]
+
+def writeJobToDB(matchKeyword):
+    
+    global SQLCur, db
+    SQLCur.execute("Insert INTO `jobs` (`job`) VALUES('" + matchKeyword + "')")
+    db.commit()
+
+def writeToOutMessageQueue(keywordID):
+    
+    global SQL, db
+    print "enter writeToOutMessage"
+    statement = "Select Source_Type,Source_ID,Action_Type,Dest_CtyCode,Dest_Number,Dest_Message,Dest_AppendRaw,Dest_Parameters from Keywords as KW, KeywordsActions as KWA where KW.Keyword_ID=KWA.Keyword_ID and KW.Keyword_ID=" + str(keywordID)
+    SQLCur.execute(statement)
+    kwa = SQLCur.fetchall()
+    for kwarow in kwa:
+      #  print kwarow[0]
+      #  print kwarow[1]
+      #  print kwarow[2]
+      #  print kwarow[3]
+      #  print kwarow[4]
+      #  print kwarow[5]
+        statement = "INSERT INTO OutMessageQueue (Job_Type,Dest_CtyCode,Dest_Number,Dest_Message) VALUES('" + str(kwarow[2]) + "','" + str(kwarow[3]) + "','" + str(kwarow[4]) + "','" + str(kwarow[5]) + "')"
+        SQLCur.execute(statement)
+        db.commit()
+    print "completed writeToOutMessage"
+
+def processRSysLogOnDB():
+    
+    global SQLCur
+    lastRequestID = 3141
+    statement = "Select * from SystemEvents WHERE ID > " + str(lastRequestID) + " ORDER BY ID ASC"
+    SQLCur.execute(statement)
+    for row in SQLCur:
+        temprow = str(row[8])
+        if lastRequestID < row[0]:
+            lastRequestID = row[0]
+                
+        for kwrow in kw:
+            tempkwrow = str(kwrow[3])
+            if temprow.lower().find(tempkwrow.lower()) != -1:
+                print "matched"
+                print temprow
+                writeToOutMessageQueue(kwrow[0])
+                
+    
+    
+    
+    
+    print lastRequestID
+    
+   # s2 = set(kw)
+    #i3 = s1.intersection(s2)
+    
+    #for com in i3:
+     #   print "matched"
+            
+            #write job to database
+      #      writeJobToDB(com)
+        
+def processSmSOnDB(): 
+    
+    
+    return 0   
+
+def processWhatsAppOnDB():
+    
+    return 0
+
+def processEmailOnDB():
+        
+    return 0
+
+def main():
+    
+    pid = str(os.getpid())
+    
+    if os.path.isfile(pidfile):
+        with open(pidfile,'r') as f:
+            curpid=int(f.read().strip())
+        if pid_exists(curpid):
+            print("%s already exists,exiting" % pidfile)
+            exit()
+        else:
+            print("%s exists, but process is dead. Creating now process file." % pidfile)
+            
+    file(pidfile,'w+').write(pid)   
+    
+    getKeywordFromDB()
+    
+    #while 1:
+        
+         #   time.sleep(1)
+            
+    processRSysLogOnDB()
+            #processSmSOnDB()
+            #processWhatsAppOnDB()
+            #processEmailOnDB()
+        
+
+if __name__ == '__main__':
+    main()
