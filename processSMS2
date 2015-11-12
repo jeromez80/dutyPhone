@@ -1,0 +1,235 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+from gsmmodem import exceptions
+from gsmmodem.modem import GsmModem
+import logging, time, os, ConfigParser, datetime, signal, errno, sys, threading
+import MySQLdb
+
+def signal_handler(signal, frame):
+	global pidfile, pollThread_stop
+	pollThread_stop.set()
+	os.unlink(pidfile)
+        sys.exit(0)
+
+def pid_exists(pid):
+    """Check whether pid exists in the current process table.
+    UNIX only.
+    """
+    if pid < 0:
+        return False
+    if pid == 0:
+        # According to "man 2 kill" PID 0 refers to every process
+        # in the process group of the calling process.
+        # On certain systems 0 is a valid PID but we have no way
+        # to know that in a portable fashion.
+        raise ValueError('invalid PID 0')
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            # ESRCH == No such process
+            return False
+        elif err.errno == errno.EPERM:
+            # EPERM clearly means there's a process to deny access to
+            return True
+        else:
+            # According to "man 2 kill" possible error values are
+            # (EINVAL, EPERM, ESRCH)
+            raise
+    else:
+        return True
+
+def loadSMSC():
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMSC_Num';")
+	return SQLCur.fetchone()[0]
+
+def loadSIMPIN():
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SIM_PIN';")
+	pin=SQLCur.fetchone()
+	if pin:
+		return pin[0]
+	else:
+		return ""
+def loadGSMPort():
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'GSM_Port';")
+	port=SQLCur.fetchone()[0]
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'GSM_Baud';")
+	baud=SQLCur.fetchone()[0]
+	if baud=="":
+		baud=115200
+	return port, baud
+
+def saveLastIncomingNumber(number):
+	print('Saving incoming number for quick reply')
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+	SQLCur.execute("UPDATE `ConfigData` SET `Config_Value` = '"+number+"' WHERE `Config_Key` = 'Last_Num';")
+	db.commit()
+	return True
+
+def getLastIncomingNumber():
+	print('Retrieving last incoming number for quick reply')
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'Last_Num';")
+	number = SQLCur.fetchone()[0]
+	return number
+
+def pollAndSend(tStop):
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	while(not tStop.is_set()):
+		SQLCur = db.cursor() 
+		delCur = db.cursor()
+		SQLCur.execute("SELECT Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message FROM `OutMessageQueue` WHERE Job_Type='SMS'")
+		outMsg = SQLCur.fetchone()
+		while outMsg is not None:
+			print("Sending "+outMsg[5]+ " to +"+outMsg[3]+outMsg[4])
+			safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5])
+			delCur.execute("DELETE FROM `OutMessageQueue` WHERE Job_ID='%s'" % outMsg[0])
+			outMsg = SQLCur.fetchone()
+		db.commit()
+		tStop.wait(3)
+		pass
+
+def safeSendSms(number, sms):
+	global modem
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+        SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'MODEM', %s, %s)",(number,sms))
+	db.commit()
+
+	if len(sms) <= 160:
+		try:
+			modem.sendSms(number, sms)
+		except Exception as err:
+			errorCode = err.args
+			print('Error received in sending sms. Terminating... CMS Code: %s' % errorCode)
+			modem.connect('')
+			modem.sendSms(number, sms)
+			print('Retried. OK')
+			#Should we exit or return false?
+			#sys.exit("CMS Error")
+		return True
+	text = sms
+	count = 1
+	while len(text) > 0:
+		print('Sending as long sms... part %i=%s' % (count,text[:150]))
+		try:
+			modem.sendSms(number, text[:150])
+		except Exception as err:
+			errorCode = err.args
+			print('Error received in sending sms (skipping multipart chunk). CMS Code: %s' % errorCode)
+		time.sleep(3)
+		count = count + 1
+		text = text[150:]
+
+def handleSms(sms):
+    global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, modem
+    print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
+    try:
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor() 
+        SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
+        SQLCur.execute("INSERT INTO `IncomingSMS` VALUES (NULL, NULL, NOW(), %s, %s, '0')",(sms.number,sms.text))
+        db.commit()
+    except MySQLdb.Error, e:
+        try:
+            print("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+        except IndexError:
+            print("MySQL Error: %s" % str(e))
+    print('Completed processing of incoming SMS...')
+    
+def main():
+    global modem, pidfile, DBHOST, DBUSER, DBPASS, DBNAME, pollThread_stop
+    pidfile = "processSMS.pid"
+    pid = str(os.getpid())
+    if os.path.isfile(pidfile):
+        with open(pidfile, 'r') as f:
+            curpid=int(f.read().strip())
+        if pid_exists(curpid):
+            sys.exit("Process exists. Exiting...")
+        else:
+            print("%s exists, but process is dead. Creating now process file." % pidfile)
+    file(pidfile, 'w+').write(pid)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    dConfig = ConfigParser.ConfigParser()
+    dConfig.read("config.ini")
+    DBHOST = dConfig.get('DB', 'DBHost')
+    DBUSER = dConfig.get('DB', 'DBUser')
+    DBPASS = dConfig.get('DB', 'DBPass')
+    DBNAME = dConfig.get('DB', 'DBName')
+    print('Connecting to database at: '+DBHOST)
+    SMSC_NUM = loadSMSC()
+    PIN = loadSIMPIN()
+    PORT,BAUDRATE=loadGSMPort()
+    STATUS_ALL=4
+
+    print('Initializing modem at '+PORT+' @ '+BAUDRATE+'...')
+    # Uncomment the following line to see what the modem is doing:
+    #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    modem = GsmModem(PORT, BAUDRATE, smsReceivedCallbackFunc=handleSms)
+    #Need to check whether the port was available. if not available ,may need to reboot the appliance?
+    modem.smsTextMode = False 
+    try:
+        modem.connect(PIN)
+    except:
+	print("Cannot connect to modem or wrong PIN code. Terminating.")
+	os.unlink(pidfile)
+	sys.exit(0)
+    if SMSC_NUM != '':
+        modem.smsc = SMSC_NUM
+    time.sleep(1)
+    try:
+        modem.checkForwarding(0)
+    except:
+        print('Error raised in checking forwarding details')
+    
+    #CHECK SMS LIST
+    messageList = modem.listStoredSms(STATUS_ALL, 'MT', True)
+    messageList.extend(modem.listStoredSms(STATUS_ALL, 'SM', True))
+    messageList.extend(modem.listStoredSms(STATUS_ALL, 'SR', True))
+    messageList.extend(modem.listStoredSms(STATUS_ALL, None, True))
+    db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+    SQLCur = db.cursor() 
+    for rSms in messageList:
+      try:
+          print (u'{0} - {1} :: {2}'.format(rSms.time, rSms.number,  rSms.text))
+          handleSms(rSms)
+      except:
+          print('Ooops, error in printing/handling message')
+
+    print('Waiting for SMS message...')    
+    time.sleep(1)
+    print(u'Signal strength is {0}% on {1} ({2}). IMEI {3}'.format(modem.signalStrength, modem.networkName, modem.imsi, modem.imei))
+
+    pollThread_stop= threading.Event()
+    pollThread = threading.Thread(target = pollAndSend, args = (pollThread_stop,))
+    pollThread.start()
+    try:
+	while 1:
+		#pollAndSend()
+		modem.rxThread.join(2**31) # Specify a (huge) timeout so that it essentially blocks indefinitely, but still receives CTRL+C interrupt signal
+    finally:
+        modem.close();
+
+if __name__ == '__main__':
+    main()
