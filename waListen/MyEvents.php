@@ -94,8 +94,7 @@ class MyEvents extends AllEvents
 		$number = ExtractNumber($from);
 		echo $body;
 		mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), '$number (WA)', 'MODEM', '$body')");
-		$GLOBALS["wa"]->sendMessage(getDutyNumber(),$body);
-		echo 'Sent to '.getDutyNumber();
+		mysql_query("INSERT INTO `IncomingWA` VALUES (NULL, NOW(), '$time', '$number (WA)', 'MODEM', '$body')");
 	}
 
 	public function onGetGroupMessage($mynumber, $from_group_jid, $from_user_jid, $id, $type, $time, $name, $body)

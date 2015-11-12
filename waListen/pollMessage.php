@@ -62,7 +62,7 @@ echo "Current duty number is" .getDutyNumber()."\n\n";
 
 $w = new WhatsProt($username, $nickname, $debug);
 $GLOBALS["wa"] = $w;
-$w->setMessageStore(new SqliteMessageStore($username));
+//$w->setMessageStore(new SqliteMessageStore($username));
 $events = new MyEvents($w);
 $w->eventManager()->bind('onGetMessage', 'onGetMessage');
 $w->eventManager()->bind('onGetGroupV2Info', 'onGetGroupV2Info');
