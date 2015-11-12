@@ -362,6 +362,7 @@ def handleSms(sms):
     print('Completed processing of incoming SMS...')
     
 def main():
+    global modem, DUTYNUM, SUPERVISORNUM, STAFFNUM, SILENTNUM, POLLPATH, DESTPATH, SMSLOGFILE, PORT, BAUDRATE, pidfile
     pidfile = "processSMS.pid"
     pid = str(os.getpid())
     if os.path.isfile(pidfile):
@@ -391,7 +392,6 @@ def main():
     SILENTNUM = []
     STATUS_ALL=4
 
-    global modem
     print('Initializing modem...')
     # Uncomment the following line to see what the modem is doing:
     #logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
