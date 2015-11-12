@@ -99,6 +99,7 @@ def pollAndSend(tStop):
 			print("Sending "+outMsg[5]+ " to +"+outMsg[3]+outMsg[4])
 			safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5])
 			delCur.execute("DELETE FROM `OutMessageQueue` WHERE Job_ID='%s'" % outMsg[0])
+			delCur.execute("INSERT INTO `OutMessageCompleted` (Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message) VALUES (NULL, NULL, 'SMS', %s, %s, %s)",(outMsg[3], outMsg[4], outMsg[5]))
 			outMsg = SQLCur.fetchone()
 		db.commit()
 		tStop.wait(3)
@@ -202,7 +203,7 @@ def main():
         modem.checkForwarding(0)
     except:
         print('Error raised in checking forwarding details')
-    
+
     #CHECK SMS LIST
     messageList = modem.listStoredSms(STATUS_ALL, 'MT', True)
     messageList.extend(modem.listStoredSms(STATUS_ALL, 'SM', True))
