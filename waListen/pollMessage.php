@@ -62,7 +62,7 @@ echo "Current duty number is" .getDutyNumber()."\n\n";
 
 $w = new WhatsProt($username, $nickname, $debug);
 $GLOBALS["wa"] = $w;
-$w->setMessageStore(new SqliteMessageStore($username));
+//$w->setMessageStore(new SqliteMessageStore($username));
 $events = new MyEvents($w);
 $w->eventManager()->bind('onGetMessage', 'onGetMessage');
 $w->eventManager()->bind('onGetGroupV2Info', 'onGetGroupV2Info');
@@ -120,59 +120,26 @@ $GLOBALS["current_contact"];
     }
 
 for ($loop=0; $loop<9; $loop++) {
-$w->pollMessage();
-$dir = new DirectoryIterator(dirname($poll_dir.'*'));
-foreach ($dir as $fileinfo) {
-    if (!$fileinfo->isDot()) {
-        $dmsg=file_get_contents($poll_dir.$fileinfo->getFilename());
-	$dnum = strtok($dmsg, "\n");
-	$dmsg=substr(strstr($dmsg,"\n"), 1);
-	if (($dnum!='') && ($dmsg!='')) {
-		if ($dnum[0]=='+') { 
-			//Job file contains a properly formatted number starting with a +
-			$dnum=ltrim ($dnum, '+'); //Remove + because WA servers dont like it
-			echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-			$w->sendMessage($dnum, $dmsg);
-			mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
-		}
-		else {
-			if ($dnum=='DUTYNUM') {
-				//Send to duty number only
-				$dnum = getDutyNumber();
-				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
-				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-				$w->sendMessage($dnum, $dmsg);
-				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
-			}
-			else if ($dnum=='GROUPCHAT') {
-				$gc = getGroupChats();
-				while ($row = mysql_fetch_array($gc)) {
-					$dnum=$row['group_code'];
-					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-					$w->sendMessage($dnum, $dmsg);
-					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '".$row['group_names']."', '$dmsg')");
-				}
-			} else {
-				//Anything without a + in front and not equal to "DUTYNUM" or "GROUPCHAT" will be defaulted.
-				$dnum = getDutyNumber();
-				if ($dnum[0]=='+') { $dnum=ltrim ($dnum, '+'); }
-				echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-				$w->sendMessage($dnum, $dmsg);
-				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
-				$gc = getGroupChats();
-				while ($row = mysql_fetch_array($gc)) {
-					$dnum=$row['group_code'];
-					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
-					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '".$row['group_names']."', '$dmsg')");
-					$w->sendMessage($dnum, $dmsg);
-				}
-			}
-		}
+	sleep(5);
+	$w->pollMessage();
+
+	$result = mysql_query("SELECT Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message FROM `OutMessageQueue` WHERE Job_Type='WA'");
+	while ($msg = mysql_fetch_array($result)) {
+		$w->sendMessage($msg['Dest_CtyCode'].$msg['Dest_Number'], $msg['Dest_Message']);
+		mysql_query("INSERT INTO `OutMessageCompleted` (Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message) VALUES (NULL, NULL, 'WA', '".$msg['Dest_CtyCode']."', '".$msg['Dest_Number']."', '".$msg['Dest_Message']."')");
+		mysql_query("DELETE FROM `OutMessageQueue` WHERE Job_ID='".$msg['Job_ID']."'");
 	}
-	rename($poll_dir.$fileinfo->getFilename(), $complete_dir.$fileinfo->getFilename());
-    }
-}
-sleep(5);
+
+	/******
+				mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '$dnum', '$dmsg')");
+				$gc = getGroupChats();
+				while ($row = mysql_fetch_array($gc)) {
+					$dnum=$row['group_code'];
+					echo 'Send to: '.$dnum . '#'. $dmsg."\n";
+					mysql_query("INSERT INTO `messages` VALUES (NULL, NOW(), 'WA-API', '".$row['group_names']."', '$dmsg')");
+					$w->sendMessage($dnum, $dmsg);
+	*********/
+
 }//for loop
 
 $w->disconnect();
