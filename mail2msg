@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import smtpd, email, ConfigParser, os, errno
+import smtpd, email, ConfigParser, os, errno, MySQLdb
 import asyncore, signal
 
 class CustomSMTPServer(smtpd.SMTPServer):
@@ -65,7 +65,30 @@ def pid_exists(pid):
     else:
 	return True
 
+def getListeningPort():
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor()
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMTP_Port';")
+	port=SQLCur.fetchone()
+	if port:
+		return int(port[0])
+	else:
+		return 25
+
+def getListeningIP():
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor()
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMTP_IP';")
+	port=SQLCur.fetchone()
+	if port:
+		return port[0]
+	else:
+		return '0.0.0.0'
+
 global POLLPATHWA, POLLPATHSMS
+global DBHOST, DBUSER, DBPASS, DBNAME
 
 pid = str(os.getpid())
 pidfile = "mail2msg.pid"
@@ -84,26 +107,16 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 dConfig = ConfigParser.ConfigParser()
-dConfig.read("config.ini")
-if dConfig.get('Mail2Msg', 'sendSMS') == 'True':
-	POLLPATHSMS = dConfig.get('SMS-Q', 'incomingpath')
-	print '[Enabled] Send by SMS via '+POLLPATHSMS
-	if not os.path.exists(POLLPATHSMS):
-		print 'Destination folder for SMS does not exist.'
-		exit()
-else:
-	POLLPATHSMS = ''
+dConfig.read("/etc/SmartMessage.conf")
+DBHOST = dConfig.get('DB', 'DBHost')
+DBUSER = dConfig.get('DB', 'DBUser')
+DBPASS = dConfig.get('DB', 'DBPass')
+DBNAME = dConfig.get('DB', 'DBName')
 
-if dConfig.get('Mail2Msg', 'sendWA') == 'True':
-	POLLPATHWA = dConfig.get('Folders', 'Drop')
-	print '[Enabled] Send by WA via '+POLLPATHWA
-	if not os.path.exists(POLLPATHWA):
-		print 'Destination folder for WA does not exist.'
-		exit()
-else:
-	POLLPATHWA = ''
+LISTENPORT = getListeningPort()
+LISTENIP = getListeningIP()
 
-print 'Binding to %s on port %s' % (dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port'))
-server = CustomSMTPServer((dConfig.get('Networking', 'Bind'), dConfig.getint('Networking', 'Port')), None)
+print 'Binding to %s on port %s' % (LISTENIP, LISTENPORT)
+server = CustomSMTPServer((LISTENIP, LISTENPORT), None)
 
 asyncore.loop()
