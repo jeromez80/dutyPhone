@@ -4,9 +4,9 @@ import time, os, errno
 import MySQLdb
 from docutils.nodes import row
 
-pidfile = "syslogFilter.pid"
+pidfile = "SMSFilter.pid"
 
-db = MySQLdb.connect(host="localhost",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
+db = MySQLdb.connect(host="127.0.0.1",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
 #db = MySQLdb.connect(host="localhost",user="root",passwd="toormysql",db="smartMessage")
 SQLCur = db.cursor()
 kw = []
@@ -43,7 +43,7 @@ def getKeywordFromDB():
     
     global SQLCur, kw
 
-    SQLCur.execute("Select * from `Keywords` where Source_Type='Syslog';")
+    SQLCur.execute("Select * from `Keywords` where Source_Type='SMS';")
     kw = SQLCur.fetchall()
 
 def writeJobToDB(matchKeyword):
@@ -60,38 +60,36 @@ def writeToOutMessageQueue(keywordID, message):
     SQLCur.execute(statement)
     kwa = SQLCur.fetchall()
     for kwarow in kwa:
-        msg = MySQLdb.escape_string(str(kwarow[5]) + " - " + message)
+        msg = MySQLdb.escape_string(message)
         #statement = "INSERT INTO OutMessageQueue (Job_Type,Dest_CtyCode,Dest_Number,Dest_Message) VALUES('" + str(kwarow[2]) + "','" + str(kwarow[3]) + "','" + str(kwarow[4]) + "','" + str(msg) + "')"
         statement = "INSERT INTO OutMessageQueue (Job_Type,Dest_CtyCode,Dest_Number,Dest_Message) VALUES(%s,%s,%s,%s)"
         SQLCur.execute(statement,(str(kwarow[2]),str(MySQLdb.escape_string(kwarow[3])),MySQLdb.escape_string(str(kwarow[4])),msg))
         db.commit()
     
-def updateRsyslogProcessStatus(rSyslogID, status):
+def updateSMSProcessStatus(SMSlogID, status):
     
     global SQL, db
-    statement = "Update SystemEvents set Processed=" + str(status) + " where ID=" + str(rSyslogID)
+    statement = "Update IncomingSMS set Processed=" + str(status) + " where SMS_ID=" + str(SMSlogID)
     SQLCur.execute(statement)    
     db.commit()
 
-def processRSysLogOnDB():
+def processSMSOnDB():
     
     global SQLCur
-    statement = "Select * from SystemEvents WHERE Processed = 0 ORDER BY ID ASC"
+    statement = "Select * from IncomingSMS WHERE Processed = 0 ORDER BY SMS_ID ASC"
     SQLCur.execute(statement)
     for row in SQLCur:
-        temprow = str(row[8])
+        temprow = str(row[4])
         for kwrow in kw:
             tempkwrow = str(kwrow[3])
             if temprow.lower().find(tempkwrow.lower()) != -1:
                 print "matched"
                 print temprow
-                
-                writeToOutMessageQueue(kwrow[0],row[8])
-                updateRsyslogProcessStatus(row[0],2)
-
+                writeToOutMessageQueue(kwrow[0],row[4])
+                updateSMSProcessStatus(row[0],2) #2 is 1 is processed and matched
             else:
-                updateRsyslogProcessStatus(row[0],1)    
-
+                updateSMSProcessStatus(row[0],1) #1 is processed and no matched
+        
 def main():
     
     pid = str(os.getpid())
@@ -113,8 +111,11 @@ def main():
         
          #   time.sleep(1)
             
-    processRSysLogOnDB()
-
+    processSMSOnDB()
+            #processSmSOnDB()
+            #processWhatsAppOnDB()
+            #processEmailOnDB()
+        
 
 if __name__ == '__main__':
     main()

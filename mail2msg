@@ -1,35 +1,42 @@
 #!/usr/bin/env python
 import smtpd, email, ConfigParser, os, errno, MySQLdb
 import asyncore, signal
+from email.parser import Parser
 
 class CustomSMTPServer(smtpd.SMTPServer):
+
+    def decode_email(self, msg_str):
+		p = Parser()
+		message = p.parsestr(msg_str)
+		decoded_message = ''
+		for part in message.walk():
+			charset = part.get_content_charset()
+			if part.get_content_type() == 'text/plain':
+				part_str = part.get_payload(decode=1)
+				decoded_message += part_str.decode(charset)
+		return decoded_message
     
     def process_message(self, peer, mailfrom, rcpttos, data):
-        global POLLPATHSMS, POLLPATHWA
         print 'Receiving message from:', peer
         print 'Message addressed from:', mailfrom
         print 'Message addressed to  :', rcpttos
         print 'Message length        :', len(data)
 	dmsg = email.message_from_string(data)
 	if dmsg.is_multipart():
+		count=1
 		for payload in dmsg.get_payload():
 		# if payload.is_multipart(): ...
 			print 'Handling multipart payload'
-			print payload.get_payload()
-			dpayload = dmsg.get_payload()
+			print (payload.get_payload())
+			dpayload = payload.get_payload()
+			if count==1:
+				writeMsgToDb(dpayload)
+				count=count+1
 	else:
 		print dmsg.get_payload()
 		dpayload = dmsg.get_payload()
-
-	dpayload = dpayload.replace('=0D=0A', '\n')
-	if POLLPATHSMS != '':
-		f=open(u'{0}msgSMTP.txt'.format(POLLPATHSMS), 'w+')
-		f.write(dpayload)
-		f.close()
-	if POLLPATHWA != '':
-		f=open(u'{0}msgSMTP.txt'.format(POLLPATHWA), 'w+')
-		f.write(dpayload)
-		f.close()
+		dpayload = dpayload.replace('=0D=0A', '\n')
+		writeMsgToDb(dpayload)
         return
 
 def signal_handler(signal, frame):
@@ -64,6 +71,14 @@ def pid_exists(pid):
             raise
     else:
 	return True
+
+def writeMsgToDb(msg):
+	global DBHOST, DBUSER, DBPASS, DBNAME
+	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
+	SQLCur = db.cursor()
+	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), 'MsgFrom', 'MsgTo', '65', 'Number', '%s', '0')" % msg)
+	db.commit()
+	return
 
 def getListeningPort():
 	global DBHOST, DBUSER, DBPASS, DBNAME

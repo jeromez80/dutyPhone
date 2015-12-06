@@ -4,7 +4,7 @@ import time, os, errno
 import MySQLdb
 from docutils.nodes import row
 
-pidfile = "syslogFilter.pid"
+pidfile = "WAFilter.pid"
 
 db = MySQLdb.connect(host="localhost",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
 #db = MySQLdb.connect(host="localhost",user="root",passwd="toormysql",db="smartMessage")
@@ -43,7 +43,7 @@ def getKeywordFromDB():
     
     global SQLCur, kw
 
-    SQLCur.execute("Select * from `Keywords` where Source_Type='Syslog';")
+    SQLCur.execute("Select * from `Keywords` where Source_Type='WA';")
     kw = SQLCur.fetchall()
 
 def writeJobToDB(matchKeyword):
@@ -60,37 +60,37 @@ def writeToOutMessageQueue(keywordID, message):
     SQLCur.execute(statement)
     kwa = SQLCur.fetchall()
     for kwarow in kwa:
-        msg = MySQLdb.escape_string(str(kwarow[5]) + " - " + message)
+        msg = MySQLdb.escape_string(message)
         #statement = "INSERT INTO OutMessageQueue (Job_Type,Dest_CtyCode,Dest_Number,Dest_Message) VALUES('" + str(kwarow[2]) + "','" + str(kwarow[3]) + "','" + str(kwarow[4]) + "','" + str(msg) + "')"
         statement = "INSERT INTO OutMessageQueue (Job_Type,Dest_CtyCode,Dest_Number,Dest_Message) VALUES(%s,%s,%s,%s)"
         SQLCur.execute(statement,(str(kwarow[2]),str(MySQLdb.escape_string(kwarow[3])),MySQLdb.escape_string(str(kwarow[4])),msg))
         db.commit()
     
-def updateRsyslogProcessStatus(rSyslogID, status):
+def updateWAProcessStatus(rSyslogID, status):
     
     global SQL, db
-    statement = "Update SystemEvents set Processed=" + str(status) + " where ID=" + str(rSyslogID)
+    statement = "Update IncomingWA set Processed=" + str(status) + " where WA_ID=" + str(rSyslogID)
     SQLCur.execute(statement)    
     db.commit()
 
-def processRSysLogOnDB():
+def processWAOnDB():
     
     global SQLCur
-    statement = "Select * from SystemEvents WHERE Processed = 0 ORDER BY ID ASC"
+    statement = "Select * from IncomingWA WHERE Processed = 0 ORDER BY WA_ID ASC"
     SQLCur.execute(statement)
     for row in SQLCur:
-        temprow = str(row[8])
+        temprow = str(row[5])
         for kwrow in kw:
             tempkwrow = str(kwrow[3])
             if temprow.lower().find(tempkwrow.lower()) != -1:
                 print "matched"
                 print temprow
                 
-                writeToOutMessageQueue(kwrow[0],row[8])
-                updateRsyslogProcessStatus(row[0],2)
+                writeToOutMessageQueue(kwrow[0],row[5])
+                updateWAProcessStatus(row[0],2)
 
             else:
-                updateRsyslogProcessStatus(row[0],1)    
+                updateWAProcessStatus(row[0],1)    
 
 def main():
     
@@ -113,7 +113,7 @@ def main():
         
          #   time.sleep(1)
             
-    processRSysLogOnDB()
+    processWAOnDB()
 
 
 if __name__ == '__main__':
