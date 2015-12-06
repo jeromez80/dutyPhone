@@ -6,9 +6,9 @@
 		<script src="js/vendor/modernizr.js"></script>
 		 <script src="js/velocity.js"></script>
     		 <script src="js/mtree.js"></script>
-    		<script src="js/foundation.min.js"></script>
-		<!--	function for tabs collapse. -->
-		<script
+    		<script src="js/jquery.min.js"></script>
+		<!--	function foy tabs collapse. -->
+		<script>
 			$(document).ready(function(){
     				$("#panel41").click(function(){
         				$("#panel42").toggle();
