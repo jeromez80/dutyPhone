@@ -1,10 +1,27 @@
 #!/usr/bin/env python
 
-import logging, time, MySQLdb, ConfigParser
+import logging, time, MySQLdb, ConfigParser, imp, os
 import logging.handlers
-from lib.daemon import Daemon
+from lib.daemon import *
 
 class SmartMessageDaemon(Daemon):
+
+	def load_from_file(filepath):
+		class_inst = None
+		expected_class = 'MyClass'
+
+		mod_name,file_ext = os.path.splitext(os.path.split(filepath)[-1])
+
+		if file_ext.lower() == '.py':
+			py_mod = imp.load_source(mod_name, filepath)
+		elif file_ext.lower() == '.pyc':
+			py_mod = imp.load_compiled(mod_name, filepath)
+
+		if hasattr(py_mod, expected_class):
+			class_inst = getattr(py_mod, expected_class)()
+
+		return class_inst
+
 	def run(self):
 		my_logger = logging.getLogger('MyLogger')
 		my_logger.setLevel(logging.DEBUG)
@@ -31,8 +48,17 @@ class SmartMessageDaemon(Daemon):
 				my_logger.critical('DB Connect error. Please check your config file.')
 				sys.exit(2)
 		        SQLCur = db.cursor()
-		        SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMSC_Num';")
-		        my_logger.info(SQLCur.fetchone()[0])
+		        SQLCur.execute("SELECT `Module_Path` FROM `Modules` WHERE `Module_Enabled` = '1';")
+			modPath = SQLCur.fetchone()[0]
+		        my_logger.info(modPath)
+			try:
+				command_module = __import__(modPath)
+			except ImportError:
+				# Display error message
+				my_logger.error("Module not found %s" % modPath)
+			my_logger.info("Successfully loaded %s" % modPath)
 			del SQLCur
 			del db
+
+			command_module.run()
 			time.sleep(1)
