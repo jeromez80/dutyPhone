@@ -13,7 +13,7 @@ define('UL_DOMAIN', 'smartmessage.beta.sg');
 
 // Set to the path of the "ulogin" directory containing the source files.
 // Do not use a trailing slash.
-define('UL_INC_DIR', '/var/www/html/web/ulogin');
+define('UL_INC_DIR', '/var/www/html/web/functions/ulogin');
 
 // A random string. Make it as random as possible and keep it secure.
 // This is a crypthographic key that uLogin will use to generate some data

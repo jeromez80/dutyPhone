@@ -8,8 +8,8 @@
 
 // This is the one and only public include file for uLogin.
 // Include it once on every authentication and for every protected page.
-require_once('ulogin/config/all.inc.php');
-require_once('ulogin/main.inc.php');
+require_once('functions/ulogin/config/all.inc.php');
+require_once('functions/ulogin/main.inc.php');
 
 // Start a secure session if none is running
 if (!sses_running())

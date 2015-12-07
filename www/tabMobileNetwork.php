@@ -1,4 +1,3 @@
-<div class="content" id="panelMN">
 	<form name="mobile_settings" method="post" action="#">
 	<div class="row">
 		<div class="large-10 medium-10 columns">
@@ -29,4 +28,3 @@
 		</div>
 	</div>
 	</form>
-</div>

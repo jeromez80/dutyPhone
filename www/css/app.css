@@ -1,8 +1,9 @@
-@charset "UTF-8";
-.accordion-navigation > a:after {
-  content: "?";
-  padding-left: 5px;
-  float: right;
-  font-size: 20px; }
-.accordion-navigation.active > a:after {
-  content: "?"; }
+/* This page is used to store customised css. 
+Add all your css here. do not edit foundation.css
+*/
+.button-expanded {
+    display: block;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0; }
+}
