@@ -2742,7 +2742,7 @@ meta.foundation-mq-topbar {
     border-width: 1px;
     border-color: #d8d8d8;
     margin-bottom: 1.25rem;
-    padding: 1.25rem;
+    padding: 5rem;
     background: #ecfaff;
     color: #333333; }
     .panel.callout > :first-child {
@@ -3404,7 +3404,7 @@ meta.foundation-mq-topbar {
   .tabs-content > .content {
     display: none;
     float: left;
-    padding: 0.9375rem 0;
+    padding: 0 0;
     width: 100%; }
     .tabs-content > .content.active {
       display: block;

@@ -1,14 +1,13 @@
 <?php
 
 //### add standard includes#####
-include("includes/main.inc.php");
+require_once(__DIR__."/functions/initialise.php");
 
 //### login check #########
 if(!isAppLoggedIn()){
   header('Location: login.php');
 }
 
-$config = new ConfigData();
 ?>
 <!doctype html>
 <html class="no-js" lang="en">
@@ -20,21 +19,23 @@ $config = new ConfigData();
         <h1>Smart-Message Gateway Setup</h1>
       </div>
     </div>
-<!-- left columns tabs menu --------->
+<!-- Left columns tabs menu --------->
 
 <?php include("tabs.php"); ?>
 
+<!--- Content ------------------->
+
 <div class="tabs-content">
   <div class="content active" id="panelNC">
-   	<?php include("tabnetworkconfiguration.php"); ?> 
-  </div>
-  
-  <div class="content" id="panelRN">
-   	<?php include("tabregisterednumber.php"); ?> 
+   	<?php include("tabnetworkconfig.php"); ?> 
   </div>
   
   <div class="content" id="panelMN">
-  	<?php include("tabMobileNetwork.php"); ?> 
+   	<?php include("tabmobilenetwork.php"); ?> 
+  </div>
+  
+  <div class="content" id="panelRN">
+  	<?php include("tabregisterednumber.php"); ?> 
   </div>
   
   <div class="content" id="panelWA">
@@ -55,9 +56,7 @@ $config = new ConfigData();
 
 </div>
 
-
-<!------------ content of pages ----------->
-<!----------- 1) network configuration ------->
+<!---  Must have these js added at the end for tabs to work ----->
  <script src="js/vendor/jquery.js"></script>
   <script src="js/foundation.min.js"></script>
   <script>

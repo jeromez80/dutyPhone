@@ -19,6 +19,8 @@ if(!isAppLoggedIn()){
 					<div class="large-12 medium-12 columns">
           	      
 						<p>Load a new WhatsApp license:</p>
+
+						<p> TODO: Show WhatsApp number and current license status (valid, not valid, etc)</P>
                 
 						<?php if (isset($licmsg)) { echo "<p>$licmsg</p>"; } ?>
 							<form method="POST" action="#">
