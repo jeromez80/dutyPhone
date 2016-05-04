@@ -44,6 +44,9 @@ def writeMsgToDb(msgfrom, msgsubject, msg):
 		msgfrom='(Unknown sender)'
 	if msgsubject is None:
 		msgsubject='(No subject)'
+		fullmsg=msg
+	else:
+		fullmsg=msgsubject+":\n"+msg
 
 	SQLCur = db.cursor()
 	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), %s, %s, '65', '0', %s, '1')", (msgfrom, msgsubject, msg))
@@ -52,7 +55,7 @@ def writeMsgToDb(msgfrom, msgsubject, msg):
 	SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=1")
 	numbers = SQLCur.fetchall()
 	for row in numbers:
-		SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], msg))
+		SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], fullmsg))
 	db.commit()
 
 	#HANDLE KEYWORD FILTER 1 RECIPIENTS, IF ANY
@@ -62,7 +65,7 @@ def writeMsgToDb(msgfrom, msgsubject, msg):
 		SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=2")
 		numbers = SQLCur.fetchall()
 		for row in numbers:
-			SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], msg))
+			SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], fullmsg))
 	db.commit()
 	return
 
@@ -143,10 +146,7 @@ for i in range(0,10):
 	i=1
 	for key in mbox.keys():
 		message = mbox.get_message(key)
-		if message['subject'] is None:
-			plainmessage = get_plaintext(message)
-		else:
-			plainmessage = message['subject'] + "\n" + get_plaintext(message)
+		plainmessage = get_plaintext(message)
 		#if message['subject'][0]=='+':
 		#	destCty = message['subject'][1:3]		#Country code to send to
 		#	destNum = message['subject'][3:]		#Number to send to
@@ -157,7 +157,7 @@ for i in range(0,10):
 		print "from: ",message['from']
 		print "subject: ",message['subject']
 		print "key: ",key
-		print "Final message: \n\n",plainmessage
+		print "message: \n\n",plainmessage
 		writeMsgToDb(message['from'], message['subject'], plainmessage)
 		mbox.discard(key)
 		print "\nMSG DELETED OK\n"

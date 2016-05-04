@@ -147,7 +147,7 @@ def handleSms(sms):
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor() 
         SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
-        SQLCur.execute("INSERT INTO `IncomingSMS` VALUES (NULL, NULL, NOW(), %s, %s, '0')",(sms.number,sms.text))
+        SQLCur.execute("INSERT INTO `IncomingSMS` VALUES (NULL, NULL, NOW(), %s, '0', %s, '0')",(sms.number,sms.text))
         db.commit()
     except MySQLdb.Error, e:
         try:
