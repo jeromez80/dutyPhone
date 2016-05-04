@@ -1,13 +1,19 @@
 #!/usr/bin/python
 
 import time, os, errno
-import MySQLdb
+import MySQLdb, ConfigParser
 from docutils.nodes import row
 
 pidfile = "syslogFilter.pid"
 
-db = MySQLdb.connect(host="localhost",user="smadmin",passwd="testsmartMessage986",db="smartMessage")
-#db = MySQLdb.connect(host="localhost",user="root",passwd="toormysql",db="smartMessage")
+dConfig = ConfigParser.ConfigParser()
+dConfig.read("/etc/SmartMessage.conf")
+DBHOST = dConfig.get('DB', 'DBHost')
+DBUSER = dConfig.get('DB', 'DBUser')
+DBPASS = dConfig.get('DB', 'DBPass')
+DBNAME = dConfig.get('DB', 'DBName')
+
+db = MySQLdb.connect(host=DBHOST,user=DBUSER,passwd=DBPASS,db=DBNAME)
 SQLCur = db.cursor()
 kw = []
 
