@@ -1,43 +1,7 @@
 #!/usr/bin/env python
-import smtpd, email, ConfigParser, os, errno, MySQLdb
+import ConfigParser, os, errno, MySQLdb
 import asyncore, signal
-from email.parser import Parser
-
-class CustomSMTPServer(smtpd.SMTPServer):
-
-    def decode_email(self, msg_str):
-		p = Parser()
-		message = p.parsestr(msg_str)
-		decoded_message = ''
-		for part in message.walk():
-			charset = part.get_content_charset()
-			if part.get_content_type() == 'text/plain':
-				part_str = part.get_payload(decode=1)
-				decoded_message += part_str.decode(charset)
-		return decoded_message
-    
-    def process_message(self, peer, mailfrom, rcpttos, data):
-        print 'Receiving message from:', peer
-        print 'Message addressed from:', mailfrom
-        print 'Message addressed to  :', rcpttos
-        print 'Message length        :', len(data)
-	dmsg = email.message_from_string(data)
-	if dmsg.is_multipart():
-		count=1
-		for payload in dmsg.get_payload():
-		# if payload.is_multipart(): ...
-			print 'Handling multipart payload'
-			print (payload.get_payload())
-			dpayload = payload.get_payload()
-			if count==1:
-				writeMsgToDb(dpayload)
-				count=count+1
-	else:
-		print dmsg.get_payload()
-		dpayload = dmsg.get_payload()
-		dpayload = dpayload.replace('=0D=0A', '\n')
-		writeMsgToDb(dpayload)
-        return
+import mailbox, chardet
 
 def signal_handler(signal, frame):
 	global pidfile
@@ -72,37 +36,58 @@ def pid_exists(pid):
     else:
 	return True
 
-def writeMsgToDb(msg):
+def writeMsgToDb(destCty, destNum, msg):
 	global DBHOST, DBUSER, DBPASS, DBNAME
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor()
-	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), 'MsgFrom', 'MsgTo', '65', 'Number', '%s', '0')" % msg)
+	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), 'MsgFrom', 'MsgTo', %s, %s, %s, '1')", (destCty, destNum, msg))
+	SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (destCty, destNum, msg))
 	db.commit()
 	return
 
-def getListeningPort():
+def getMailDir():
 	global DBHOST, DBUSER, DBPASS, DBNAME
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor()
-	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMTP_Port';")
-	port=SQLCur.fetchone()
-	if port:
-		return int(port[0])
+	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMTP_MailDir';")
+	maildir=SQLCur.fetchone()
+	if maildir:
+		return maildir[0]
 	else:
-		return 25
+		return '/root/Maildir/'
 
-def getListeningIP():
-	global DBHOST, DBUSER, DBPASS, DBNAME
-	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
-	SQLCur = db.cursor()
-	SQLCur.execute("SELECT `Config_Value` FROM `ConfigData` WHERE `Config_Key` = 'SMTP_IP';")
-	port=SQLCur.fetchone()
-	if port:
-		return port[0]
+def get_plaintext(msg):
+	text = ""
+	if msg.is_multipart():
+		html = None
+		for part in msg.get_payload():
+			if part.get_content_charset() is None:
+				charset = chardet.detect(str(part))['encoding']
+			else:
+				charset = part.get_content_charset()
+			if part.get_content_type() == 'text/plain':
+				text = unicode(part.get_payload(decode=True),str(charset),"ignore").encode('utf8','replace')
+			if part.get_content_type() == 'text/html':
+				html = unicode(part.get_payload(decode=True),str(charset),"ignore").encode('utf8','replace')
+			if part.get_content_type() == 'multipart/alternative':
+				for subpart in part.get_payload():
+					if subpart.get_content_charset() is None:
+						charset = chardet.detect(str(subpart))['encoding']
+					else:
+						charset = subpart.get_content_charset()
+					if subpart.get_content_type() == 'text/plain':
+						text = unicode(subpart.get_payload(decode=True),str(charset),"ignore").encode('utf8','replace')
+					if subpart.get_content_type() == 'text/html':
+						html = unicode(subpart.get_payload(decode=True),str(charset),"ignore").encode('utf8','replace')
+		if html is None:
+			return text.strip()
+		else:
+			return html.strip()
 	else:
-		return '0.0.0.0'
+		#text = unicode(msg.get_payload(decode=True),msg.get_content_charset(),'ignore').encode('utf8','replace')
+		text = msg.get_payload(decode=True)
+		return text.strip()
 
-global POLLPATHWA, POLLPATHSMS
 global DBHOST, DBUSER, DBPASS, DBNAME
 
 pid = str(os.getpid())
@@ -128,10 +113,29 @@ DBUSER = dConfig.get('DB', 'DBUser')
 DBPASS = dConfig.get('DB', 'DBPass')
 DBNAME = dConfig.get('DB', 'DBName')
 
-LISTENPORT = getListeningPort()
-LISTENIP = getListeningIP()
+MAILDIR = getMailDir()
 
-print 'Binding to %s on port %s' % (LISTENIP, LISTENPORT)
-server = CustomSMTPServer((LISTENIP, LISTENPORT), None)
+print "Checking mail folder at",MAILDIR
 
-asyncore.loop()
+mbox = mailbox.Maildir(MAILDIR, None)
+i=1
+for key in mbox.keys():
+	message = mbox.get_message(key)
+	plainmessage = get_plaintext(message)
+	if message['subject'][0]=='+':
+		destCty = message['subject'][1:3]		#Country code to send to
+		destNum = message['subject'][3:]		#Number to send to
+	else:
+		destCty = '65'
+		destNum = '93822131'
+	print i
+	print "from: ",message['from']
+	print "subject: ",message['subject']
+	print "key: ",key
+	print "message: \n\n",plainmessage
+	writeMsgToDb(destCty, destNum, plainmessage)
+	mbox.discard(key)
+	print "\nMSG DELETED OK\n"
+	print "\n\n**********************"
+	i+=1
+
