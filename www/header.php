@@ -1,7 +1,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Smart-Message Gateway :: Configuration</title>
+		<title>SmartMessage Gateway :: Web Admin</title>
 		<link rel="stylesheet" href="css/foundation.css" />
 		<link rel="stylesheet" href="css/app.css" />
 		<script src="js/vendor/modernizr.js"></script>
@@ -29,6 +29,7 @@
 					$("#panelLogsSMS").toggle();
 					$("#panelLogsWA").toggle();
 					$("#panelLogsMG").toggle();
+					$("#panelLogsEM").toggle();
 	
     				});
 			});
@@ -41,6 +42,7 @@
                                         $("#panelLogsSMS").removeClass('active');
                                         $("#panelLogsWA").removeClass('active');
                                         $("#panelLogsMG").removeClass('active');
+                                        $("#panelLogsEM").removeClass('active');
                                 });
 
 				
@@ -50,6 +52,7 @@
                                         $("#panelLogsSMS").removeClass('active');
                                         $("#panelLogsWA").removeClass('active');
                                         $("#panelLogsMG").removeClass('active');
+                                        $("#panelLogsEM").removeClass('active');
 				});
 
  				$("#panelMN").click(function(){
@@ -57,6 +60,7 @@
                                         $("#panelLogsSMS").removeClass('active');
                                         $("#panelLogsWA").removeClass('active');
                                         $("#panelLogsMG").removeClass('active');
+                                        $("#panelLogsEM").removeClass('active');
 
 				});
 				
@@ -67,6 +71,17 @@
                                         $("#panelLogsSMS").removeClass('active');
                                         $("#panelLogsWA").removeClass('active');
                                         $("#panelLogsMG").removeClass('active');
+                                        $("#panelLogsEM").removeClass('active');
+				});
+
+
+                                $("#panelEM").click(function(){
+                                
+					$("#panelLogsSys").removeClass('active');
+                                        $("#panelLogsSMS").removeClass('active');
+                                        $("#panelLogsWA").removeClass('active');
+                                        $("#panelLogsMG").removeClass('active');
+                                        $("#panelLogsEM").removeClass('active');
 				});
 
 				 $("#panelLOff").click(function(){
