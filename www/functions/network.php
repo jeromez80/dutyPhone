@@ -1,8 +1,6 @@
 <?php
 require_once(__DIR__."/initialise.php");
 
-$connect = mysql_connect(DB_HOSTNAME,DB_USERNAME,DB_PASSWORD);
-
 function get_ipaddr() { 
 	$query = mysql_query('SELECT * FROM ConfigData WHERE Config_Key="IP_Addr"');
 

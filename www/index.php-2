@@ -20,44 +20,49 @@ if(!isAppLoggedIn()){
       </div>
     </div>
 <!-- Left columns tabs menu --------->
-<div>
+
 <?php include("tabs.php"); ?>
-</div>
+
 <!--- Content ------------------->
+
 <div class="tabs-content">
   <div class="content active" id="panelNC">
-        <?php include("tabnetworkconfig.php"); ?>
+   	<?php include("tabnetworkconfig.php"); ?> 
   </div>
-
+  
   <div class="content" id="panelMN">
-        <?php include("tabmobilenetwork.php"); ?>
+   	<?php include("tabmobilenetwork.php"); ?> 
   </div>
-
+  
   <div class="content" id="panelRN">
-        <?php include("tabregisterednumber.php"); ?>
+  	<?php include("tabregisterednumber.php"); ?> 
   </div>
-
+  
   <div class="content" id="panelWA">
-        <?php include("tabwhatsapp.php"); ?>
+   	<?php include("tabwhatsapp.php"); ?> 
   </div>
-
+  
   <div class="content" id="panelLogsSysPage">
-	<?php// include("tabsyslogs.php"); ?>        
+ 	<p> syspage </p> 
  </div>
-
+   
   <div class="content" id="panelLogsWAPage">
-        <p> wa page </p>
+ 	<p> wa page </p>
   </div>
-
+   
   <div class="content" id="panelLogsSMSPage">
-        <?php include("tabsmslogs.php"); ?>
+ 	<?php include("tabsmslogs.php"); ?>
   </div>
 
 </div>
+
+<?php include("test.php");?>
+
 <!---  Must have these js added at the end for tabs to work ----->
 
-<script src="js/foundation.min.js"></script>  
-<script>
+<script src="js/vendor/jquery.js"></script>
+  <script src="js/foundation.min.js"></script>
+  <script>
     $(document).foundation();
   </script>
 </body>

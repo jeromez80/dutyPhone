@@ -1,5 +1,7 @@
 <?php
-include_once("includes/main.inc.php");
+require_once(__DIR__."/functions/initialise.php");
+require_once(__DIR__."/functions/network.php");
+
 if(!isAppLoggedIn()){
   header('Location: login.php');
 }

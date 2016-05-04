@@ -1,5 +1,7 @@
 <?php
-include_once("includes/main.inc.php");
+require_once(__DIR__."/functions/initialise.php");
+require_once(__DIR__."/functions/mobilenetwork.php");
+
 if(!isAppLoggedIn()){
   header('Location: login.php');
 }
@@ -15,15 +17,15 @@ if(!isAppLoggedIn()){
           <div class="row">
             <div class="large-4 medium-4 columns">
               <label>SMS Message Center</label>
-              <input type="text" name="sms_message_centre" placeholder="SMSC Number from Telco" value="<?php echo '1234'; ?>"/>
+              <input type="text" name="sms_message_centre" placeholder="SMSC Number from Telco" value="<?php echo get_smsc(); ?>"/>
             </div>
             <div class="large-4 medium-4 columns">
               <label>Current Duty Number</label>
-              <input type="text" name="current_duty_number" placeholder="Default to receive alerts" value="<?php echo '12345'; ?>"/>
+              <input type="text" name="current_duty_number" placeholder="Default to receive alerts" value="<?php echo get_dutynum(); ?>"/>
             </div>
             <div class="large-4 medium-4 columns">
               <label>Last Incoming Message From</label>
-              <input type="text" name="last_incoming_message_form" placeholder="For replying to SMS" value="<?php echo '123456'; ?>"/>
+              <input type="text" name="last_incoming_message_form" placeholder="For replying to SMS" value="<?php echo get_lastmsgnum(); ?>"/>
             </div>
           </div>
                   <div class="row">

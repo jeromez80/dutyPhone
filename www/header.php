@@ -6,12 +6,22 @@
 		<link rel="stylesheet" href="css/app.css" />
 		<script src="js/vendor/modernizr.js"></script>
 	 	<script src="js/velocity.js"></script>
-    		 <script src="js/mtree.js"></script>
-   		<script src="js/jquery.min.js"></script>
+    		<script src="js/mtree.js"></script>
+		<script src="js/jquery.min.js"></script>
+
+		<!--  scripts for dataTables -->		
+		<link rel="stylesheet" href="css/dataTables.foundation.min.css" />
+		<link rel="stylesheet" href="css/buttons.foundation.min.css" />
+		<link rel="stylesheet" href="css/jquery.dataTables.min.css" />
+		<script src="js/dataTables.foundation.min.js"></script>
+		<script src="js/jquery.dataTables.min.js"></script>
+		<script src="js/buttons.foundation.min.js"></script>
+		<script src="js/dataTables.buttons.min.js"></script>
 		
-		<!--	function foy tabs collapse. -->
+
+		<!--	function for tabs collapse. -->
 		
-		<!-- leave it here. will put into another file later on. --->
+		<!-- leave it here. will put into another file later on. -->
 		<script>
 			$(document).ready(function(){
     				$("#panelLogs").click(function(){
@@ -61,11 +71,19 @@
 
 				 $("#panelLOff").click(function(){
                                         $(location).attr('href','logout.php');
-                                });i
+                                });
 
 
 
                         });
 
-		</script>	
+
+			$(document).ready(function() {
+        			$('#sortTable').DataTable( {
+					"order": [[ 0, "desc" ]]
+			
+				} );		
+		
+        		} );
+	       </script>
 	</head>

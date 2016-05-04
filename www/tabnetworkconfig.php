@@ -1,5 +1,7 @@
 <?php
-include_once("includes/main.inc.php");
+require_once(__DIR__."/functions/initialise.php");
+require_once(__DIR__."/functions/network.php");
+
 if(!isAppLoggedIn()){
   header('Location: login.php');
 }
@@ -17,11 +19,11 @@ if(!isAppLoggedIn()){
             		
 				<div class="large-6 medium-6 columns">
               				<label>Network IPv4 Address (Leave blank for DHCP)</label>
-              				<input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php echo '123';?>"/>
+              				<input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php echo get_ipaddr();?>"/>
               				<label>Network IPv4 Gateway</label>
-              				<input type="text" name="staticGW" placeholder="Leave blank for DHCP assigned value" value="<?php echo '123';?>"/>
+              				<input type="text" name="staticGW" placeholder="Leave blank for DHCP assigned value" value="<?php echo get_ipgateway();?>"/>
               				<label>Network IPv4 DNS</label>
-              				<input type="text" name="staticDNS" placeholder="Leave blank for DHCP assigned value" value="<?php echo '123';?>"/>
+              				<input type="text" name="staticDNS" placeholder="Leave blank for DHCP assigned value" value="<?php echo get_ipdns();?>"/>
             			</div>
             
 				<div class="large-6 medium-6 columns">

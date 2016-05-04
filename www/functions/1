@@ -1,0 +1,15 @@
+<?php
+require_once(__DIR__."/initialise.php");
+function get_inOutSMSlogs() {
+        $query = mysql_query("select Timestamp, MsgFrom, ,MsgTo, Message from `IncomingSMS` order by id desc;");
+	 if ($row=mysql_fetch_array($query)) {
+        
+		return $row;
+	}
+
+
+}
+
+
+
+?>
