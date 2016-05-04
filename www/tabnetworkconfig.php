@@ -20,6 +20,8 @@ if(!isAppLoggedIn()){
 				<div class="large-6 medium-6 columns">
               				<label>Network IPv4 Address (Leave blank for DHCP)</label>
               				<input type="text" name="staticIP" placeholder="Leave blank for dynamic IP Address" value="<?php echo get_ipaddr();?>"/>
+              				<label>Network IPv4 Subnet </label>
+              				<input type="text" name="staticSN" placeholder="Leave blank for DHCP assigned value" value="<?php echo get_subnet();?>"/>
               				<label>Network IPv4 Gateway</label>
               				<input type="text" name="staticGW" placeholder="Leave blank for DHCP assigned value" value="<?php echo get_ipgateway();?>"/>
               				<label>Network IPv4 DNS</label>
@@ -44,11 +46,8 @@ if(!isAppLoggedIn()){
             			<div class="large-12 medium-12 columns">
               				This device is pre-configured to:
               				<ul>
-               					<li style='color:green'><b>Send incoming alerts to both SMS duty number and selected WhatsApp Group Chat (Enabled)</b></li>
-                				<li style='color:gray'>Send incoming alerts to SMS duty number only</li>
-                				<li style='color:gray'>Send incoming alerts selected WhatsApp Group Chat. If it fails, send to duty number via SMS</li>
+                				<li style='color:gray'>Send incoming email alerts to preconfigured mobile numbers.</li>
               				</ul>
-              				Supported alerts: SMS, HTTP, SMTP via TCP/25
  	           		</div>
          		 </div>
 		</form>

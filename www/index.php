@@ -38,19 +38,31 @@ if(!isAppLoggedIn()){
   </div>
 
   <div class="content" id="panelWA">
-        <?php include("tabwhatsapp.php"); ?>
+        <?php include("tabsocial.php"); ?>
+  </div>
+
+  <div class="content" id="panelFilters">
+        <?php include("tabkeywordfilters.php"); ?>
   </div>
 
   <div class="content" id="panelLogsSysPage">
-	<?php// include("tabsyslogs.php"); ?>        
+	<?php include("tabsyslogs.php"); ?>        
  </div>
 
   <div class="content" id="panelLogsWAPage">
-        <p> wa page </p>
+        <?php include("tabsociallogs.php"); ?>
   </div>
 
   <div class="content" id="panelLogsSMSPage">
         <?php include("tabsmslogs.php"); ?>
+  </div>
+
+  <div class="content" id="panelLogsEMPage">
+        <?php include("tabemaillogs.php"); ?>
+  </div>
+
+  <div class="content" id="panelLogsMGPage">
+        <?php include("tabdevicelogs.php"); ?>
   </div>
 
 </div>

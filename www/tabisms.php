@@ -14,14 +14,18 @@ if(!isAppLoggedIn()){
 			<div class="panel">
 			<h3>Mobile Network Settings</h3>
           <p>Depending on your messaging provider, please configure the appropriate settings here.</p>
-	<p>Singtel Mobile, please enter +6596197777</p>
-	<p>Singtel Hi! Card, please enter +6596400001</p>
-	<p>Starhub, please enter +6598540020</p>
-	<p>M1 (MobileOne), please enter +6596845997</p>
           <div class="row">
             <div class="large-4 medium-4 columns">
               <label>SMS Message Center</label>
               <input type="text" name="sms_message_centre" placeholder="SMSC Number from Telco" value="<?php echo get_smsc(); ?>"/>
+            </div>
+            <div class="large-4 medium-4 columns">
+              <label>Current Duty Number</label>
+              <input type="text" name="current_duty_number" placeholder="Default to receive alerts" value="<?php echo get_dutynum(); ?>"/>
+            </div>
+            <div class="large-4 medium-4 columns">
+              <label>Last Incoming Message From</label>
+              <input type="text" name="last_incoming_message_form" placeholder="For replying to SMS" value="<?php echo get_lastmsgnum(); ?>"/>
             </div>
           </div>
                   <div class="row">

@@ -11,17 +11,17 @@ require_once(__DIR__."/functions/syslog.php");
 <div class="row">
         <div class="large-10 medium-10 columns">
                 <div class="panel">
-                        <h3>Incoming Syslog</h3>
+                        <h3>Incoming Emails</h3>
 
                         <?php
-                                $query = get_inSyslogs();
+                                $query = get_inEmails();
                         ?>
                                 <table id="sortTable" class="display" cellspacing="0" width="100%">
                                         <thead>
                                                 <tr>
                                                         <th id="logtimestamp">Date</th>
-                                                        <th>From Host</th>
-                                                        <th>From IP</th>
+                                                        <th>From</th>
+                                                        <th>Subject</th>
                                                         <th>Message</th>
                                                 </tr>
                                         </thead>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import ConfigParser, os, errno, MySQLdb
 import asyncore, signal
-import mailbox, chardet
+import mailbox, chardet, time
 
 def signal_handler(signal, frame):
 	global pidfile
@@ -36,12 +36,27 @@ def pid_exists(pid):
     else:
 	return True
 
-def writeMsgToDb(destCty, destNum, msg):
+def writeMsgToDb(msgfrom, msgsubject, msg):
 	global DBHOST, DBUSER, DBPASS, DBNAME
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor()
-	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), 'MsgFrom', 'MsgTo', %s, %s, %s, '1')", (destCty, destNum, msg))
-	SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (destCty, destNum, msg))
+	SQLCur.execute("INSERT INTO `IncomingEmail` (`Email_ID`, `DBTimestamp`, `Timestamp`, `MsgFrom`, `MsgTo`, `Dest_CtyCode`, `Dest_Number`, `Message`, `Processed`) VALUES (NULL, CURRENT_TIMESTAMP, NOW(), %s, %s, '65', '123', %s, '1')", ('from', 'msgsubject', msg))
+
+	#HANDLE DEFAULT FILTER RECIPIENTS, IF ANY
+	SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=1")
+	numbers = SQLCur.fetchall()
+	for row in numbers:
+		SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], msg))
+	db.commit()
+
+	#HANDLE KEYWORD FILTER 1 RECIPIENTS, IF ANY
+	SQLCur.execute("SELECT Keyword FROM `Keywords` WHERE Keyword_ID=2")
+	kw1 = SQLCur.fetchone()[0]
+	if kw1.lower() in msg.lower():
+		SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=2")
+		numbers = SQLCur.fetchall()
+		for row in numbers:
+			SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], msg))
 	db.commit()
 	return
 
@@ -115,27 +130,29 @@ DBNAME = dConfig.get('DB', 'DBName')
 
 MAILDIR = getMailDir()
 
-print "Checking mail folder at",MAILDIR
-
-mbox = mailbox.Maildir(MAILDIR, None)
-i=1
-for key in mbox.keys():
-	message = mbox.get_message(key)
-	plainmessage = get_plaintext(message)
-	if message['subject'][0]=='+':
-		destCty = message['subject'][1:3]		#Country code to send to
-		destNum = message['subject'][3:]		#Number to send to
-	else:
-		destCty = '65'
-		destNum = '93822131'
-	print i
-	print "from: ",message['from']
-	print "subject: ",message['subject']
-	print "key: ",key
-	print "message: \n\n",plainmessage
-	writeMsgToDb(destCty, destNum, plainmessage)
-	mbox.discard(key)
-	print "\nMSG DELETED OK\n"
-	print "\n\n**********************"
-	i+=1
-
+#Let's loop this for 11 times a minute.
+for i in range(0,10):
+	print "Checking mail folder at",MAILDIR
+	mbox = mailbox.Maildir(MAILDIR, None)
+	i=1
+	for key in mbox.keys():
+		message = mbox.get_message(key)
+		plainmessage = message['subject'] + ":\n" + get_plaintext(message)
+		#if message['subject'][0]=='+':
+		#	destCty = message['subject'][1:3]		#Country code to send to
+		#	destNum = message['subject'][3:]		#Number to send to
+		#else:
+		#	destCty = '65'
+		#	destNum = '98765432' #Default number
+		#print i
+		print "from: ",message['from']
+		print "subject: ",message['subject']
+		print "key: ",key
+		print "Final message: \n\n",plainmessage
+		writeMsgToDb(message['from'], message['subject'], plainmessage)
+		mbox.discard(key)
+		print "\nMSG DELETED OK\n"
+		print "\n\n**********************"
+		i+=1
+	#sleep 5 seconds before redoing it
+	time.sleep(5)

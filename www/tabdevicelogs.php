@@ -11,10 +11,10 @@ require_once(__DIR__."/functions/syslog.php");
 <div class="row">
         <div class="large-10 medium-10 columns">
                 <div class="panel">
-                        <h3>Incoming Syslog</h3>
+                        <h3>SmartMessage Logs</h3>
 
                         <?php
-                                $query = get_inSyslogs();
+//                                $query = get_inSyslogs();
                         ?>
                                 <table id="sortTable" class="display" cellspacing="0" width="100%">
                                         <thead>
