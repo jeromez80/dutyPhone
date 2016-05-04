@@ -16,7 +16,7 @@ require_once(__DIR__."/functions/email.php");
                         <?php
                                 $query = get_inEmails();
                         ?>
-                                <table id="sortTable" class="display" cellspacing="0" width="100%">
+                                <table id="sortEMTable" class="display" cellspacing="0" width="100%">
                                         <thead>
                                                 <tr>
                                                         <th id="logtimestamp">Date</th>
@@ -40,7 +40,7 @@ require_once(__DIR__."/functions/email.php");
                                         </tbody>
                                 </table>
 
-                        <form action="#" method="POST"><input class="small radius button" type="submit" name="nothing" value="Refresh"></form>
+                        <form action="#" method="POST"><input class="small radius button" type="submit" name="refreshEmailLogs" value="Refresh"></form>
                 </div>
       </div>
 </div>

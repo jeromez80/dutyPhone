@@ -96,7 +96,14 @@
 			$(document).ready(function() {
         			$('#sortTable').DataTable( {
 					"order": [[ 0, "desc" ]]
-			
+				} );		
+
+        			$('#sortEMTable').DataTable( {
+					"order": [[ 0, "desc" ]]
+				} );		
+
+        			$('#sortSMSTable').DataTable( {
+					"order": [[ 0, "desc" ]]
 				} );		
 		
         		} );

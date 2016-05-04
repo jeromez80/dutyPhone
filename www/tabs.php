@@ -6,11 +6,11 @@
 		<li id="panelFilters" class="tab-title"><a href="#panelFilters">Keyword Filters</a></li>
 		<li id="panelLogs" class="tab-title"><a href="#panelLogs">Logs</a></li>
 		<ul class="tabs" data-tab>		
-			<li id="panelLogsSys" class="tab-title" style="display:none;"><a href="#panelLogsSysPage"> - Incoming Syslog</a></li>
-			<li id="panelLogsEM" class="tab-title" style="display:none;"><a href="#panelLogsEMPage"> - Incoming Emails</a></li> 
+			<li id="panelLogsSys" class="tab-title" ><a href="#panelLogsSysPage"> - Incoming Syslog</a></li>
+			<li id="panelLogsEM" class="tab-title" ><a href="#panelLogsEMPage"> - Incoming Emails</a></li> 
 <!---			<li id="panelLogsWA" class="tab-title" style="display:none;"><a href="#panelLogsWAPage"> - Social/IM Logs</a></li> --->
-			<li id="panelLogsSMS" class="tab-title" style="display:none;"><a href="#panelLogsSMSPage"> - SMS Logs</a></li>
-			<li id="panelLogsMG" class="tab-title" style="display:none;"><a href="#panelLogsMGPage"> - SmartMessage Logs</a></li>
+			<li id="panelLogsSMS" class="tab-title" ><a href="#panelLogsSMSPage"> - SMS Logs</a></li>
+			<li id="panelLogsMG" class="tab-title" ><a href="#panelLogsMGPage"> - SmartMessage Logs</a></li>
 		</ul>
                 <li id="panelLOff" class="tab-title"><a href="logout.php">Log out</a></li>
         </ul>

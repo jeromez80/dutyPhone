@@ -24,8 +24,12 @@ if(!isAppLoggedIn()){
 <?php include("tabs.php"); ?>
 </div>
 <!--- Content ------------------->
+<?php $tabNC='active';?>
+<?php if ($_POST['refreshEmailLogs']!='') { $tabEmail='active'; $tabNC='';} ?>
+<?php if ($_POST['refreshSMS']!='') { $tabSMS='active'; $tabNC='';} ?>
+<?php if ($_POST['btnSaveFilters']!='') { $tabKW='active'; $tabNC='';} ?>
 <div class="tabs-content">
-  <div class="content active" id="panelNC">
+  <div class="content <?php echo $tabNC; ?>" id="panelNC">
         <?php include("tabnetworkconfig.php"); ?>
   </div>
 
@@ -33,6 +37,7 @@ if(!isAppLoggedIn()){
         <?php include("tabmobilenetwork.php"); ?>
   </div>
 
+<!---
   <div class="content" id="panelRN">
         <?php include("tabregisterednumber.php"); ?>
   </div>
@@ -40,24 +45,24 @@ if(!isAppLoggedIn()){
   <div class="content" id="panelWA">
         <?php include("tabsocial.php"); ?>
   </div>
-
-  <div class="content" id="panelFilters">
+--->
+  <div class="content <?php echo $tabKW; ?>" id="panelFilters">
         <?php include("tabkeywordfilters.php"); ?>
   </div>
 
   <div class="content" id="panelLogsSysPage">
 	<?php include("tabsyslogs.php"); ?>        
  </div>
-
+<!----
   <div class="content" id="panelLogsWAPage">
         <?php include("tabsociallogs.php"); ?>
   </div>
-
-  <div class="content" id="panelLogsSMSPage">
+--->
+  <div class="content <?php echo $tabSMS; ?>" id="panelLogsSMSPage">
         <?php include("tabsmslogs.php"); ?>
   </div>
 
-  <div class="content" id="panelLogsEMPage">
+  <div class="content <?php echo $tabEmail; ?>" id="panelLogsEMPage">
         <?php include("tabemaillogs.php"); ?>
   </div>
 
