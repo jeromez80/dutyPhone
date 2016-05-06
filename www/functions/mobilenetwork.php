@@ -42,4 +42,7 @@ function set_lastmsgnum($value) {
     return(mysql_query('INSERT INTO ConfigData (Config_Key, Config_Value) VALUES ("Last_Num", "'.$value.'") ON DUPLICATE KEY UPDATE Config_Value="'.$value.'"'));
 }
 
+if ($_POST['btnMNsubmit'] != '') {
+        set_smsc($_POST['sms_message_centre']);
+}
 ?>
