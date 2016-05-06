@@ -26,7 +26,7 @@ if(!isAppLoggedIn()){
           </div>
                   <div class="row">
                         <div class="panel" style="border:none;">
-                                <input type="submit" class="small radius button" value="Update" name="submit">
+                                <input type="submit" class="small radius button" value="Update" name="btnMNsubmit">
                         </div>
                   </div>
 
