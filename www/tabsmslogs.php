@@ -23,6 +23,7 @@ require_once(__DIR__."/functions/sms.php");
                 					<th>From</th>
                 					<th>To</th>
                 					<th>Message</th>
+                					<th>Status</th>
             					</tr>
         				</thead>
 					<tbody>
@@ -34,6 +35,7 @@ require_once(__DIR__."/functions/sms.php");
 								<td><?php echo $row[1];?></td>
 								<td><?php echo $row[2];?></td>
                 			                        <td><?php echo $row[3];?></td>			
+                			                        <td><?php echo $row[4];?></td>			
                 					</tr>
 				
 					<?php	} ?>

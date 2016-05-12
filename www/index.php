@@ -37,6 +37,10 @@ if(!isAppLoggedIn()){
         <?php include("tabmobilenetwork.php"); ?>
   </div>
 
+  <div class="content" id="panelSend">
+        <?php include("tabsendsms.php"); ?>
+  </div>
+
 <!---
   <div class="content" id="panelRN">
         <?php include("tabregisterednumber.php"); ?>

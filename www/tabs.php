@@ -1,6 +1,7 @@
 	<ul class="tabs vertical" data-tab>
 		<li id="panelNC"  class="tab-title active"><a href="index.php">Network Configuration</a></li>
 		<li id="panelMN" class="tab-title"><a href="#panelMN">Mobile Network</a></li>
+		<li id="panelSend" class="tab-title"><a href="#panelSend">Send SMS</a></li>
 <!---		<li id="panelRN" class="tab-title"><a href="#panelRN">Registered Numbers</a></li> --->
 <!---		<li id="panelWA" class="tab-title"><a href="#panelWA">Social/IM</a></li> --->
 		<li id="panelFilters" class="tab-title"><a href="#panelFilters">Keyword Filters</a></li>
