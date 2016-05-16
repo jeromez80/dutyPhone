@@ -49,7 +49,8 @@ class interactiveSMS:
 
 	def handleSms(self, message):
 		DUTYNUM='+6593822131'
-		SUPERVISORNUM='+6593822131'
+		SUPERVISORNUM=['+6593822131']
+		SILENTNUM=[]
 		print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(message[1], message[0], message[2]))
 		if message[1] in ['+6593822131'] or message[1] in ['+6593822131']:
 			keyword = message[2].lower().split()[0]
@@ -176,6 +177,10 @@ class interactiveSMS:
 						if match == 0:
 							print(u'No match. Ignoring alert for {0}'.format(supervisor))
 		print(u'Completed processing of incoming SMS...')
+
+#Interim defs for migration
+def loadSupervisorKeywords(nameofsup):
+	return ['*all'];
 
 isms = interactiveSMS()
 isms.run()

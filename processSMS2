@@ -96,10 +96,14 @@ def pollAndSend(tStop):
 		SQLCur.execute("SELECT Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message FROM `OutMessageQueue` WHERE Job_Type='SMS'")
 		outMsg = SQLCur.fetchone()
 		while outMsg is not None:
-			print("Sending "+outMsg[5]+ " to +"+outMsg[3]+outMsg[4])
 			#THIS PART NEEDS TO BE REFINED IN CASE THE NUMBER IS INVALID, OR IF THE SAFE SEND FAILS with an exception
 			delCur.execute("DELETE FROM `OutMessageQueue` WHERE Job_ID='%s'" % outMsg[0])
-			safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5])
+			if outMsg[3] == '':
+				print("Sending "+outMsg[5]+ " to "+outMsg[3]+outMsg[4])
+				safeSendSms(outMsg[3]+outMsg[4], outMsg[5])
+			else:
+				print("Sending "+outMsg[5]+ " to +"+outMsg[3]+outMsg[4])
+				safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5])
 			delCur.execute("INSERT INTO `OutMessageCompleted` (Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message) VALUES (NULL, NULL, 'SMS', %s, %s, %s)",(outMsg[3], outMsg[4], outMsg[5]))
 			outMsg = SQLCur.fetchone()
 		db.commit()

@@ -12,6 +12,8 @@ require_once(__DIR__."/functions/sms.php");
 	<div class="large-10 medium-10 columns">
         	<div class="panel">
         		<h3>Message Log</h3>
+
+<?php	if ($msgBox!='') { echo "<h4>$msgBox</h4>"; }?>
 	
 			<?php
 				$query = get_inOutSMSlogs();

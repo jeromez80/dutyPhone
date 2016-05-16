@@ -6,7 +6,7 @@ if(!isAppLoggedIn()){
   header('Location: login.php');
 }
 ?>
-	<form name="sendsms" method="post" action="#">
+	<form name="sendsms" method="POST" action=".">
 	<div class="row">
 		<div class="large-10 medium-10 columns">
 			<div class="panel">

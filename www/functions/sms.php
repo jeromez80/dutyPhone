@@ -43,4 +43,23 @@ function get_outSMSlogs() {
         return $query;
 }
 
+if ($_POST['btnSendSms'] != '') {
+	$msg= $_POST['message'];
+	if ($_POST['destnum'][0]=='+') {
+		$ctycode = substr($_POST['destnum'],1,2);
+		$destnum = substr($_POST['destnum'],3);
+	} else {
+		$ctycode = '';
+		$destnum = $_POST['destnum'];
+	}
+        $query = mysql_query("INSERT INTO `OutMessageQueue` (Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message) VALUES (NULL, NULL, 'SMS', '$ctycode', '$destnum', '$msg')
+	");
+        if(!$query) {
+                die('invalid query' . mysql_error());
+        }
+	$msgBox = 'Message sent: ' .$_POST['message'] . ' To: '.$_POST['destnum'];
+
+        return $query;
+}
+
 ?>

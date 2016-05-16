@@ -28,6 +28,7 @@ if(!isAppLoggedIn()){
 <?php if ($_POST['refreshEmailLogs']!='') { $tabEmail='active'; $tabNC='';} ?>
 <?php if ($_POST['refreshSMS']!='') { $tabSMS='active'; $tabNC='';} ?>
 <?php if ($_POST['btnSaveFilters']!='') { $tabKW='active'; $tabNC='';} ?>
+<?php if ($_POST['btnSendSms']!='') { $tabSMS='active'; $tabNC='';} ?>
 <div class="tabs-content">
   <div class="content <?php echo $tabNC; ?>" id="panelNC">
         <?php include("tabnetworkconfig.php"); ?>
