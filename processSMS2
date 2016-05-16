@@ -100,10 +100,10 @@ def pollAndSend(tStop):
 			delCur.execute("DELETE FROM `OutMessageQueue` WHERE Job_ID='%s'" % outMsg[0])
 			if outMsg[3] == '':
 				print("Sending "+outMsg[5]+ " to "+outMsg[3]+outMsg[4])
-				safeSendSms(outMsg[3]+outMsg[4], outMsg[5])
+				safeSendSms(outMsg[3]+outMsg[4], outMsg[5].decode('utf8'))
 			else:
 				print("Sending "+outMsg[5]+ " to +"+outMsg[3]+outMsg[4])
-				safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5])
+				safeSendSms('+'+outMsg[3]+outMsg[4], outMsg[5].decode('utf8'))
 			delCur.execute("INSERT INTO `OutMessageCompleted` (Job_ID, Job_Time, Job_Type, Dest_CtyCode, Dest_Number, Dest_Message) VALUES (NULL, NULL, 'SMS', %s, %s, %s)",(outMsg[3], outMsg[4], outMsg[5]))
 			outMsg = SQLCur.fetchone()
 		db.commit()
@@ -115,10 +115,11 @@ def safeSendSms(number, sms):
 	global DBHOST, DBUSER, DBPASS, DBNAME
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor() 
-        SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'MODEM', %s, %s)",(number,sms))
+        SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), 'MODEM', %s, %s)",(number,sms.encode('utf8')))
 	db.commit()
 
-	if len(sms) <= 160:
+#	if len(sms) <= 160:
+	if len(sms) > 0:
 		try:
 			modem.sendSms(number, sms)
 		except Exception as err:
@@ -128,7 +129,7 @@ def safeSendSms(number, sms):
 			modem.sendSms(number, sms)
 			print('Retried. OK')
 			#Should we exit or return false?
-			#sys.exit("CMS Error")
+			sys.exit("CMS Error")
 		return True
 	text = sms
 	count = 1
@@ -145,14 +146,37 @@ def safeSendSms(number, sms):
 
 def handleSms(sms):
     global STAFFNUM, SUPERVISORNUM, DUTYNUM, SILENTNUM, modem
-    print(u'== SMS message received ==\nFrom: {0}\nTime: {1}\nMessage:\n{2}\n'.format(sms.number, sms.time, sms.text))
+    if isinstance(sms.text, unicode):
+        print(u'== Binary SMS received ==\n')
+    else:
+        print(u'== SMS message received ==\nFrom: %s\nTime: %s\nMessage:\n%s\n' % (sms.number, sms.time, sms.text.encode('utf8')))
+
     try:
 	global DBHOST, DBUSER, DBPASS, DBNAME
 	db = MySQLdb.connect(host=DBHOST, user=DBUSER, passwd=DBPASS, db=DBNAME)
 	SQLCur = db.cursor() 
-        SQLCur.execute("INSERT INTO `messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text))
-        SQLCur.execute("INSERT INTO `IncomingSMS` VALUES (NULL, NULL, NOW(), %s, '0', %s, '0')",(sms.number,sms.text))
+        SQLCur.execute(u"INSERT INTO `messages` VALUES (NULL, NOW(), %s, 'MODEM', %s)",(sms.number,sms.text.encode('utf8')))
+        SQLCur.execute(u"INSERT INTO `IncomingSMS` VALUES (NULL, NULL, NOW(), %s, '0', %s, '0')",(sms.number,sms.text.encode('utf8')))
         db.commit()
+
+	#HANDLE DEFAULT FILTER RECIPIENTS, IF ANY
+	SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=1")
+	numbers = SQLCur.fetchall()
+	for row in numbers:
+		SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], sms.text.encode('utf8')))
+	db.commit()
+
+	#HANDLE KEYWORD FILTER 1 RECIPIENTS, IF ANY
+	SQLCur.execute("SELECT Keyword FROM `Keywords` WHERE Keyword_ID=2")
+	kw1 = SQLCur.fetchone()[0]
+	if kw1.lower() in sms.text.lower():
+		SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=2")
+		numbers = SQLCur.fetchall()
+		for row in numbers:
+			SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], sms.text.encode('utf8')))
+	db.commit()
+
+
     except MySQLdb.Error, e:
         try:
             print("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
@@ -176,6 +200,8 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    reload(sys)  
+    sys.setdefaultencoding('utf-8')
     dConfig = ConfigParser.ConfigParser()
     dConfig.read("config.ini")
     DBHOST = dConfig.get('DB', 'DBHost')
