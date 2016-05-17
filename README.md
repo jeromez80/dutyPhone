@@ -22,3 +22,16 @@ Disable SELinux in:
 /etc/selinux/config
 
 Install epel-release in Yum
+
+Set timezone
+timedatectl set-timezone Asia/Singapore
+
+Install NTP
+yum install ntpdate
+ntpdate -b -u -s pool.ntp.org
+
+Sync to hardware clock
+hwclock -w
+
+Edit php.ini
+Set date.timezone to Asia/Singapore
