@@ -35,3 +35,5 @@ hwclock -w
 
 Edit php.ini
 Set date.timezone to Asia/Singapore
+
+Copy images, firmware image files (amss.mbn, apps.mbn, and UQCN.mbn) in /lib/firmware/gobi/
