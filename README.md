@@ -11,3 +11,10 @@ To run in headless mode:
 nohup ./startWork.py > out.log&
 
 This will output the log to the file out.log
+
+Quick References for Setup
+
+Set alias for easy shortcut to working folder.
+alias gduty='cd /usr/local/src/dutyPhone'
+
+Install epel-release in Yum
