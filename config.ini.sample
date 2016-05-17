@@ -1,0 +1,5 @@
+[DB]
+DBHost=localhost
+DBUser=root
+DBPass=
+DBName=smartMessage
