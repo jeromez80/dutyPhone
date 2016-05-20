@@ -11,3 +11,29 @@ To run in headless mode:
 nohup ./startWork.py > out.log&
 
 This will output the log to the file out.log
+
+Quick References for Setup
+
+Set alias for easy shortcut to working folder.
+
+alias gduty='cd /usr/local/src/dutyPhone'
+
+Disable SELinux in:
+/etc/selinux/config
+
+Install epel-release in Yum
+
+Set timezone
+timedatectl set-timezone Asia/Singapore
+
+Install NTP
+yum install ntpdate
+ntpdate -b -u -s pool.ntp.org
+
+Sync to hardware clock
+hwclock -w
+
+Edit php.ini
+Set date.timezone to Asia/Singapore
+
+Copy images, firmware image files (amss.mbn, apps.mbn, and UQCN.mbn) in /lib/firmware/gobi/
