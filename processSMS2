@@ -127,11 +127,12 @@ def safeSendSms(number, sms):
 		except Exception as err:
 			errorCode = err.args
 			print('Error received in sending sms. Terminating... CMS Code: %s' % errorCode)
-			modem.connect('')
-			modem.sendSms(number, sms)
-			print('Retried. OK')
+			#modem.connect('')
+			#modem.sendSms(number, sms)
+			#print('Retried. OK')
 			#Should we exit or return false?
-			sys.exit("CMS Error")
+			return False
+			sys.exit()
 		return True
 	text = sms
 	count = 1
