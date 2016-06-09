@@ -60,12 +60,14 @@ def writeMsgToDb(msgfrom, msgsubject, msg):
 
 	#HANDLE KEYWORD FILTER 1 RECIPIENTS, IF ANY
 	SQLCur.execute("SELECT Keyword FROM `Keywords` WHERE Keyword_ID=2")
-	kw1 = SQLCur.fetchone()[0]
-	if kw1.lower() in msg.lower():
-		SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=2")
-		numbers = SQLCur.fetchall()
-		for row in numbers:
-			SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], fullmsg))
+	kw1 = SQLCur.fetchone()
+	if kw1 is not None:
+		kw1 = kw1[0]
+		if kw1.lower() in msg.lower():
+			SQLCur.execute("SELECT Dest_CtyCode, Dest_Number FROM `KeywordsActions` WHERE Keyword_ID=2")
+			numbers = SQLCur.fetchall()
+			for row in numbers:
+				SQLCur.execute("INSERT INTO `OutMessageQueue` (`Job_ID`, `Job_Time`, `Job_Type`, `Dest_CtyCode`, `Dest_Number`, `Dest_Message`) VALUES (NULL, CURRENT_TIMESTAMP, 'SMS', %s, %s, %s)", (row[0], row[1], fullmsg))
 	db.commit()
 	return
 
