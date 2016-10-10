@@ -5,6 +5,7 @@
 <!---		<li id="panelRN" class="tab-title"><a href="#panelRN">Registered Numbers</a></li> --->
 <!---		<li id="panelWA" class="tab-title"><a href="#panelWA">Social/IM</a></li> --->
 		<li id="panelFilters" class="tab-title"><a href="#panelFilters">Keyword Filters</a></li>
+		<li id="panelMonHosts" class="tab-title"><a href="#panelMonHosts">Monitored Hosts</a></li>
 		<li id="panelLogs" class="tab-title"><a href="#panelLogs">Logs</a></li>
 		<ul class="tabs" data-tab>		
 			<li id="panelLogsSys" class="tab-title" ><a href="#panelLogsSysPage"> - Incoming Syslog</a></li>

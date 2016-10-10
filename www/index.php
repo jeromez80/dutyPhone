@@ -55,6 +55,10 @@ if(!isAppLoggedIn()){
         <?php include("tabkeywordfilters.php"); ?>
   </div>
 
+  <div class="content <?php echo $tabKW; ?>" id="panelMonHosts">
+        <?php include("tabMonitoredHosts.php"); ?>
+  </div>
+
   <div class="content" id="panelLogsSysPage">
 	<?php include("tabsyslogs.php"); ?>        
  </div>
